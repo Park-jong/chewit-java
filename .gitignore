@@ -1,0 +1,18 @@
+# Backend run artifacts
+backend/run.log
+backend/run-err.log
+
+# Frontend (future)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/settings.local.json
