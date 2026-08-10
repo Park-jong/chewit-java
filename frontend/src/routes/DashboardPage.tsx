@@ -10,6 +10,15 @@ import {
 } from '@/features/tasks/hooks'
 import { TaskItem } from '@/features/tasks/TaskItem'
 import { AddTaskForm } from '@/features/tasks/AddTaskForm'
+import {
+  useCreateRoutineMutation,
+  useDeleteRoutineMutation,
+  useRoutinesQuery,
+  useToggleRoutineMutation,
+} from '@/features/routines/hooks'
+import { RoutineItem } from '@/features/routines/RoutineItem'
+import { AddRoutineForm } from '@/features/routines/AddRoutineForm'
+import type { DayOfWeek } from '@/features/routines/types'
 import { addDaysISO, formatDisplayDate, todayISO } from '@/lib/date'
 import { getErrorMessage } from '@/lib/error'
 import { Button } from '@/components/ui/button'
@@ -23,7 +32,14 @@ export function DashboardPage() {
   const toggleTask = useToggleTaskMutation()
   const deleteTask = useDeleteTaskMutation()
 
+  const routinesQuery = useRoutinesQuery(date)
+  const createRoutine = useCreateRoutineMutation()
+  const toggleRoutine = useToggleRoutineMutation()
+  const deleteRoutine = useDeleteRoutineMutation()
+
   const isMutating = createTask.isPending || toggleTask.isPending || deleteTask.isPending
+  const isRoutineMutating =
+    createRoutine.isPending || toggleRoutine.isPending || deleteRoutine.isPending
 
   function handleAdd(title: string) {
     createTask.mutate(
@@ -40,6 +56,26 @@ export function DashboardPage() {
 
   function handleDelete(id: number) {
     deleteTask.mutate(id, {
+      onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')),
+    })
+  }
+
+  function handleAddRoutine(title: string, daysOfWeek: DayOfWeek[]) {
+    createRoutine.mutate(
+      { title, daysOfWeek },
+      { onError: (error) => toast.error(getErrorMessage(error, '루틴 추가에 실패했습니다.')) },
+    )
+  }
+
+  function handleToggleRoutine(id: number) {
+    toggleRoutine.mutate(
+      { id, date },
+      { onError: (error) => toast.error(getErrorMessage(error, '상태 변경에 실패했습니다.')) },
+    )
+  }
+
+  function handleDeleteRoutine(id: number) {
+    deleteRoutine.mutate(id, {
       onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')),
     })
   }
@@ -98,6 +134,33 @@ export function DashboardPage() {
             disabled={isMutating}
           />
         ))}
+      </div>
+
+      <div className="flex flex-col gap-3 border-t pt-6">
+        <h2 className="text-sm font-medium text-muted-foreground">이 날의 루틴</h2>
+
+        <AddRoutineForm onAdd={handleAddRoutine} disabled={createRoutine.isPending} />
+
+        <div className="flex flex-col gap-2">
+          {routinesQuery.isPending && (
+            <p className="text-center text-sm text-muted-foreground">불러오는 중...</p>
+          )}
+          {routinesQuery.isError && (
+            <p className="text-center text-sm text-destructive">루틴을 불러오지 못했습니다.</p>
+          )}
+          {routinesQuery.data?.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground">이 날은 루틴이 없습니다.</p>
+          )}
+          {routinesQuery.data?.map((routine) => (
+            <RoutineItem
+              key={routine.id}
+              routine={routine}
+              onToggle={handleToggleRoutine}
+              onDelete={handleDeleteRoutine}
+              disabled={isRoutineMutating}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
