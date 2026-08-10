@@ -4,7 +4,9 @@ import com.chewworld.chewit.dto.RoutineDtos.CreateRoutineRequest;
 import com.chewworld.chewit.dto.RoutineDtos.RoutineResponse;
 import com.chewworld.chewit.dto.RoutineDtos.UpdateRoutineRequest;
 import com.chewworld.chewit.security.UserPrincipal;
+import com.chewworld.chewit.service.RoutineService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,47 +17,63 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@RestController
 @RequestMapping("/api/routines")
-public interface RoutineController {
+@RequiredArgsConstructor
+public class RoutineController {
+
+    private final RoutineService routineService;
 
     @GetMapping
-    List<RoutineResponse> list(
-            @AuthenticationPrincipal UserPrincipal principal
-    );
+    public List<RoutineResponse> list(@AuthenticationPrincipal UserPrincipal principal) {
+        return routineService.listAll(principal.userId());
+    }
 
     @GetMapping("/today")
-    List<RoutineResponse> listByDate(
+    public List<RoutineResponse> listByDate(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    );
+    ) {
+        LocalDate targetDate = date != null ? date : LocalDate.now();
+        return routineService.listByDate(principal.userId(), targetDate);
+    }
 
     @PostMapping
-    RoutineResponse create(
+    public RoutineResponse create(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateRoutineRequest request
-    );
+    ) {
+        return routineService.create(principal.userId(), request);
+    }
 
     @PatchMapping("/{id}")
-    RoutineResponse update(
+    public RoutineResponse update(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id,
             @Valid @RequestBody UpdateRoutineRequest request
-    );
+    ) {
+        return routineService.update(principal.userId(), id, request);
+    }
 
     @PatchMapping("/{id}/toggle")
-    RoutineResponse toggle(
+    public RoutineResponse toggle(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    );
+    ) {
+        return routineService.toggleCompletion(principal.userId(), id, date);
+    }
 
     @DeleteMapping("/{id}")
-    void delete(
+    public void delete(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id
-    );
+    ) {
+        routineService.delete(principal.userId(), id);
+    }
 }
