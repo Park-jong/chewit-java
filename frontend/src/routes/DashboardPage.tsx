@@ -93,9 +93,14 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <Link to="/events" className="text-sm text-primary underline underline-offset-4">
-        이벤트 화면으로
-      </Link>
+      <div className="flex gap-4">
+        <Link to="/events" className="text-sm text-primary underline underline-offset-4">
+          이벤트 화면으로
+        </Link>
+        <Link to="/checklists" className="text-sm text-primary underline underline-offset-4">
+          체크리스트 화면으로
+        </Link>
+      </div>
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => addDaysISO(d, -1))}>

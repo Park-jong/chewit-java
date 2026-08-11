@@ -50,9 +50,14 @@ export function EventsPage() {
         </div>
       </div>
 
-      <Link to="/" className="text-sm text-primary underline underline-offset-4">
-        오늘 화면으로
-      </Link>
+      <div className="flex gap-4">
+        <Link to="/" className="text-sm text-primary underline underline-offset-4">
+          오늘 화면으로
+        </Link>
+        <Link to="/checklists" className="text-sm text-primary underline underline-offset-4">
+          체크리스트 화면으로
+        </Link>
+      </div>
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setMonth((m) => addMonthsISO(m, -1))}>

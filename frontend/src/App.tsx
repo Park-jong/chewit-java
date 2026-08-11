@@ -4,6 +4,8 @@ import { LoginPage } from '@/routes/LoginPage'
 import { SignupPage } from '@/routes/SignupPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { EventsPage } from '@/routes/EventsPage'
+import { ChecklistsPage } from '@/routes/ChecklistsPage'
+import { ChecklistDetailPage } from '@/routes/ChecklistDetailPage'
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/checklists" element={<ChecklistsPage />} />
+        <Route path="/checklists/:id" element={<ChecklistDetailPage />} />
       </Route>
     </Routes>
   )
