@@ -3,6 +3,7 @@ import { ProtectedRoute, PublicOnlyRoute } from '@/routes/ProtectedRoute'
 import { LoginPage } from '@/routes/LoginPage'
 import { SignupPage } from '@/routes/SignupPage'
 import { DashboardPage } from '@/routes/DashboardPage'
+import { EventsPage } from '@/routes/EventsPage'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/events" element={<EventsPage />} />
       </Route>
     </Routes>
   )

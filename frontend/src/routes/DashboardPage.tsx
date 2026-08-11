@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/features/auth/AuthContext'
 import {
@@ -91,6 +92,10 @@ export function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      <Link to="/events" className="text-sm text-primary underline underline-offset-4">
+        이벤트 화면으로
+      </Link>
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => addDaysISO(d, -1))}>
