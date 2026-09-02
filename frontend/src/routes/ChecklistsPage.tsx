@@ -52,6 +52,9 @@ export function ChecklistsPage() {
         <Link to="/events" className="text-sm text-primary underline underline-offset-4">
           이벤트 화면으로
         </Link>
+        <Link to="/stats" className="text-sm text-primary underline underline-offset-4">
+          통계 화면으로
+        </Link>
       </div>
 
       <h2 className="text-lg font-medium">체크리스트</h2>
