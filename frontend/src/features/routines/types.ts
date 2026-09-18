@@ -35,6 +35,7 @@ export interface Routine {
   active: boolean
   done: boolean
   createdAt: string
+  completionRate: number
 }
 
 export interface CreateRoutineRequest {

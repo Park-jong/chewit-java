@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useMonthlyStatsQuery } from '@/features/stats/hooks'
 import { StatTile } from '@/features/stats/StatTile'
@@ -32,17 +32,7 @@ export function StatsPage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <Link to="/" className="text-sm text-primary underline underline-offset-4">
-          오늘 화면으로
-        </Link>
-        <Link to="/events" className="text-sm text-primary underline underline-offset-4">
-          이벤트 화면으로
-        </Link>
-        <Link to="/checklists" className="text-sm text-primary underline underline-offset-4">
-          체크리스트 화면으로
-        </Link>
-      </div>
+      <NavBar />
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setMonth((m) => addMonthsISO(m, -1))}>

@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { DAY_LABELS, DAY_ORDER, type Routine } from './types'
 
@@ -26,9 +27,12 @@ export function RoutineItem({ routine, onToggle, onDelete, disabled }: RoutineIt
         onCheckedChange={() => onToggle(routine.id)}
       />
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate', routine.done && 'text-muted-foreground line-through')}>
-          {routine.title}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className={cn('truncate', routine.done && 'text-muted-foreground line-through')}>
+            {routine.title}
+          </p>
+          <Badge variant="secondary">{Math.round(routine.completionRate * 100)}%</Badge>
+        </div>
         <p className="truncate text-sm text-muted-foreground">
           {formatDays(routine)}
           {routine.memo && ` · ${routine.memo}`}

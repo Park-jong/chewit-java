@@ -5,8 +5,8 @@ import { SignupPage } from '@/routes/SignupPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { EventsPage } from '@/routes/EventsPage'
 import { ChecklistsPage } from '@/routes/ChecklistsPage'
-import { ChecklistDetailPage } from '@/routes/ChecklistDetailPage'
 import { StatsPage } from '@/routes/StatsPage'
+import { CalendarPage } from '@/routes/CalendarPage'
 
 function App() {
   return (
@@ -19,8 +19,8 @@ function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/checklists" element={<ChecklistsPage />} />
-        <Route path="/checklists/:id" element={<ChecklistDetailPage />} />
         <Route path="/stats" element={<StatsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
       </Route>
     </Routes>
   )

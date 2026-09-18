@@ -34,7 +34,8 @@ public class RoutineDtos {
             Set<DayOfWeek> daysOfWeek,
             boolean active,
             boolean done,
-            Instant createdAt
+            Instant createdAt,
+            double completionRate
     ) {
     }
 }

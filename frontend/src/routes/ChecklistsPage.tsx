@@ -1,15 +1,25 @@
-import { Link } from 'react-router-dom'
-import { Trash2 } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
 import {
+  useAddChecklistItemMutation,
   useChecklistsQuery,
   useCreateChecklistMutation,
+  useDeleteChecklistItemMutation,
   useDeleteChecklistMutation,
+  useRenameChecklistMutation,
+  useReorderChecklistItemsMutation,
+  useToggleChecklistItemMutation,
 } from '@/features/checklists/hooks'
 import { AddChecklistForm } from '@/features/checklists/AddChecklistForm'
+import { AddChecklistItemForm } from '@/features/checklists/AddChecklistItemForm'
+import { ChecklistItemRow } from '@/features/checklists/ChecklistItemRow'
+import type { Checklist } from '@/features/checklists/types'
 import { getErrorMessage } from '@/lib/error'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export function ChecklistsPage() {
   const { user, logout } = useAuth()
@@ -17,8 +27,22 @@ export function ChecklistsPage() {
   const checklistsQuery = useChecklistsQuery()
   const createChecklist = useCreateChecklistMutation()
   const deleteChecklist = useDeleteChecklistMutation()
+  const renameChecklist = useRenameChecklistMutation()
+  const addItem = useAddChecklistItemMutation()
+  const toggleItem = useToggleChecklistItemMutation()
+  const deleteItem = useDeleteChecklistItemMutation()
+  const reorderItems = useReorderChecklistItemsMutation()
+
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [title, setTitle] = useState<string | null>(null)
 
   const isMutating = createChecklist.isPending || deleteChecklist.isPending
+  const isItemMutating =
+    renameChecklist.isPending ||
+    addItem.isPending ||
+    toggleItem.isPending ||
+    deleteItem.isPending ||
+    reorderItems.isPending
 
   function handleAdd(title: string) {
     createChecklist.mutate(
@@ -31,6 +55,58 @@ export function ChecklistsPage() {
     deleteChecklist.mutate(id, {
       onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')),
     })
+    if (expandedId === id) setExpandedId(null)
+  }
+
+  function handleToggleExpand(id: number) {
+    setExpandedId((prev) => (prev === id ? null : id))
+    setTitle(null)
+  }
+
+  function handleRenameSubmit(event: FormEvent, checklist: Checklist) {
+    event.preventDefault()
+    if (title === null) return
+    const trimmed = title.trim()
+    if (!trimmed || trimmed === checklist.title) return
+    renameChecklist.mutate(
+      { id: checklist.id, request: { title: trimmed } },
+      { onError: (error) => toast.error(getErrorMessage(error, '이름 변경에 실패했습니다.')) },
+    )
+  }
+
+  function handleAddItem(checklistId: number, content: string) {
+    addItem.mutate(
+      { checklistId, request: { content } },
+      { onError: (error) => toast.error(getErrorMessage(error, '항목 추가에 실패했습니다.')) },
+    )
+  }
+
+  function handleToggle(checklistId: number, itemId: number) {
+    toggleItem.mutate(
+      { checklistId, itemId },
+      { onError: (error) => toast.error(getErrorMessage(error, '상태 변경에 실패했습니다.')) },
+    )
+  }
+
+  function handleDeleteItem(checklistId: number, itemId: number) {
+    deleteItem.mutate(
+      { checklistId, itemId },
+      { onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')) },
+    )
+  }
+
+  function handleMove(checklist: Checklist, itemId: number, direction: 'up' | 'down') {
+    const items = checklist.items
+    const index = items.findIndex((item) => item.id === itemId)
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (index === -1 || targetIndex < 0 || targetIndex >= items.length) return
+
+    const reordered = [...items]
+    ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+    reorderItems.mutate(
+      { checklistId: checklist.id, request: { itemIds: reordered.map((item) => item.id) } },
+      { onError: (error) => toast.error(getErrorMessage(error, '순서 변경에 실패했습니다.')) },
+    )
   }
 
   return (
@@ -45,17 +121,7 @@ export function ChecklistsPage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <Link to="/" className="text-sm text-primary underline underline-offset-4">
-          오늘 화면으로
-        </Link>
-        <Link to="/events" className="text-sm text-primary underline underline-offset-4">
-          이벤트 화면으로
-        </Link>
-        <Link to="/stats" className="text-sm text-primary underline underline-offset-4">
-          통계 화면으로
-        </Link>
-      </div>
+      <NavBar />
 
       <h2 className="text-lg font-medium">체크리스트</h2>
 
@@ -73,23 +139,78 @@ export function ChecklistsPage() {
         )}
         {checklistsQuery.data?.map((checklist) => {
           const doneCount = checklist.items.filter((item) => item.checked).length
+          const isExpanded = expandedId === checklist.id
           return (
-            <div key={checklist.id} className="flex items-center gap-3 rounded-md border p-3">
-              <Link to={`/checklists/${checklist.id}`} className="min-w-0 flex-1">
-                <p className="truncate">{checklist.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  {doneCount}/{checklist.items.length} 완료
-                </p>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={isMutating}
-                onClick={() => handleDelete(checklist.id)}
-                aria-label="삭제"
-              >
-                <Trash2 className="size-4" />
-              </Button>
+            <div key={checklist.id} className="rounded-md border">
+              <div className="flex items-center gap-3 p-3">
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  onClick={() => handleToggleExpand(checklist.id)}
+                  aria-expanded={isExpanded}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <p className="truncate">{checklist.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {doneCount}/{checklist.items.length} 완료
+                    </p>
+                  </span>
+                </button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={isMutating}
+                  onClick={() => handleDelete(checklist.id)}
+                  aria-label="삭제"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+
+              {isExpanded && (
+                <div className="flex flex-col gap-3 border-t p-3">
+                  <form onSubmit={(event) => handleRenameSubmit(event, checklist)} className="flex gap-2">
+                    <Input
+                      value={title ?? checklist.title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      onBlur={() => setTitle(null)}
+                      disabled={renameChecklist.isPending}
+                    />
+                    <Button type="submit" variant="outline" disabled={renameChecklist.isPending}>
+                      이름 변경
+                    </Button>
+                  </form>
+
+                  <AddChecklistItemForm
+                    onAdd={(content) => handleAddItem(checklist.id, content)}
+                    disabled={addItem.isPending}
+                  />
+
+                  <div className="flex flex-col gap-2">
+                    {checklist.items.length === 0 && (
+                      <p className="text-center text-sm text-muted-foreground">항목이 없습니다.</p>
+                    )}
+                    {checklist.items.map((item, index) => (
+                      <ChecklistItemRow
+                        key={item.id}
+                        item={item}
+                        isFirst={index === 0}
+                        isLast={index === checklist.items.length - 1}
+                        onToggle={(itemId) => handleToggle(checklist.id, itemId)}
+                        onDelete={(itemId) => handleDeleteItem(checklist.id, itemId)}
+                        onMoveUp={(itemId) => handleMove(checklist, itemId, 'up')}
+                        onMoveDown={(itemId) => handleMove(checklist, itemId, 'down')}
+                        disabled={isItemMutating}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )
         })}

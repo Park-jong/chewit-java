@@ -60,6 +60,50 @@ class RoutineServiceImplTest {
     }
 
     @Test
+    void listAll_예정된_요일이_없으면_완료율은_0이다() {
+        Routine routine = Routine.builder().id(1L).title("운동").daysOfWeek(Set.of()).build();
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of(routine));
+
+        List<RoutineResponse> responses = routineService.listAll(USER_ID);
+
+        assertThat(responses.get(0).completionRate()).isEqualTo(0.0);
+    }
+
+    @Test
+    void listAll_이번주_예정된_날을_모두_완료하면_완료율은_1이다() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1L); // 이번 주 월요일
+        Routine routine = Routine.builder().id(1L).title("운동").daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of(routine));
+
+        List<RoutineCompletion> completions = weekStart.datesUntil(today.plusDays(1))
+                .map(date -> RoutineCompletion.builder().routine(routine).date(date).build())
+                .toList();
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), weekStart, today))
+                .thenReturn(completions);
+
+        List<RoutineResponse> responses = routineService.listAll(USER_ID);
+
+        // 이번 주 월요일부터 오늘까지 매일 완료했으므로 완료율은 항상 1.0
+        assertThat(responses.get(0).completionRate()).isEqualTo(1.0);
+    }
+
+    @Test
+    void listAll_이번주_완료기록이_없으면_완료율은_0이다() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        Routine routine = Routine.builder().id(1L).title("운동").daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of(routine));
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), weekStart, today))
+                .thenReturn(List.of());
+
+        List<RoutineResponse> responses = routineService.listAll(USER_ID);
+
+        // 예정된 날은 있지만(이번 주 월요일~오늘) 완료기록이 없으므로 0.0
+        assertThat(responses.get(0).completionRate()).isEqualTo(0.0);
+    }
+
+    @Test
     void listByDate_해당_요일에_활성화된_루틴이_없으면_빈_목록이고_완료조회는_안한다() {
         LocalDate date = LocalDate.of(2026, 8, 17); // 월요일
         when(routineRepository.findActiveByUserIdAndDayOfWeek(USER_ID, DayOfWeek.MONDAY)).thenReturn(List.of());

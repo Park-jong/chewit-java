@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
 import {
   useCreateTaskMutation,
@@ -20,6 +20,8 @@ import {
 import { RoutineItem } from '@/features/routines/RoutineItem'
 import { AddRoutineForm } from '@/features/routines/AddRoutineForm'
 import type { DayOfWeek } from '@/features/routines/types'
+import { useEventsQuery } from '@/features/events/hooks'
+import { RECURRENCE_LABELS } from '@/features/events/types'
 import { addDaysISO, formatDisplayDate, todayISO } from '@/lib/date'
 import { getErrorMessage } from '@/lib/error'
 import { Button } from '@/components/ui/button'
@@ -37,6 +39,9 @@ export function DashboardPage() {
   const createRoutine = useCreateRoutineMutation()
   const toggleRoutine = useToggleRoutineMutation()
   const deleteRoutine = useDeleteRoutineMutation()
+
+  const eventsQuery = useEventsQuery(date.slice(0, 7))
+  const todaysEvents = eventsQuery.data?.filter((event) => event.occurrenceDate === date)
 
   const isMutating = createTask.isPending || toggleTask.isPending || deleteTask.isPending
   const isRoutineMutating =
@@ -93,17 +98,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <Link to="/events" className="text-sm text-primary underline underline-offset-4">
-          이벤트 화면으로
-        </Link>
-        <Link to="/checklists" className="text-sm text-primary underline underline-offset-4">
-          체크리스트 화면으로
-        </Link>
-        <Link to="/stats" className="text-sm text-primary underline underline-offset-4">
-          통계 화면으로
-        </Link>
-      </div>
+      <NavBar />
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => addDaysISO(d, -1))}>
@@ -172,6 +167,34 @@ export function DashboardPage() {
               onDelete={handleDeleteRoutine}
               disabled={isRoutineMutating}
             />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 border-t pt-6">
+        <h2 className="text-sm font-medium text-muted-foreground">이 날의 이벤트</h2>
+
+        <div className="flex flex-col gap-2">
+          {eventsQuery.isPending && (
+            <p className="text-center text-sm text-muted-foreground">불러오는 중...</p>
+          )}
+          {eventsQuery.isError && (
+            <p className="text-center text-sm text-destructive">이벤트를 불러오지 못했습니다.</p>
+          )}
+          {todaysEvents?.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground">이 날은 이벤트가 없습니다.</p>
+          )}
+          {todaysEvents?.map((event) => (
+            <div key={`${event.id}-${event.occurrenceDate}`} className="rounded-md border p-3">
+              <p className="truncate">{event.title}</p>
+              {(event.recurrence !== 'NONE' || event.memo) && (
+                <p className="truncate text-sm text-muted-foreground">
+                  {event.recurrence !== 'NONE' && RECURRENCE_LABELS[event.recurrence]}
+                  {event.recurrence !== 'NONE' && event.memo && ' · '}
+                  {event.memo}
+                </p>
+              )}
+            </div>
           ))}
         </div>
       </div>
