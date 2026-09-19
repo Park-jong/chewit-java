@@ -35,6 +35,9 @@ export function ChecklistsPage() {
 
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [title, setTitle] = useState<string | null>(null)
+  const [draggedChecklistId, setDraggedChecklistId] = useState<number | null>(null)
+  const [draggedItemId, setDraggedItemId] = useState<number | null>(null)
+  const [dragOverItemId, setDragOverItemId] = useState<number | null>(null)
 
   const isMutating = createChecklist.isPending || deleteChecklist.isPending
   const isItemMutating =
@@ -103,6 +106,41 @@ export function ChecklistsPage() {
 
     const reordered = [...items]
     ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+    reorderItems.mutate(
+      { checklistId: checklist.id, request: { itemIds: reordered.map((item) => item.id) } },
+      { onError: (error) => toast.error(getErrorMessage(error, '순서 변경에 실패했습니다.')) },
+    )
+  }
+
+  function handleItemDragStart(checklistId: number, itemId: number) {
+    setDraggedChecklistId(checklistId)
+    setDraggedItemId(itemId)
+  }
+
+  function handleItemDragOver(checklistId: number, itemId: number) {
+    if (checklistId !== draggedChecklistId) return
+    setDragOverItemId(itemId)
+  }
+
+  function handleItemDragEnd() {
+    setDraggedChecklistId(null)
+    setDraggedItemId(null)
+    setDragOverItemId(null)
+  }
+
+  function handleItemDrop(checklist: Checklist, targetItemId: number) {
+    const sourceItemId = draggedItemId
+    handleItemDragEnd()
+    if (sourceItemId === null || sourceItemId === targetItemId) return
+
+    const items = checklist.items
+    const fromIndex = items.findIndex((item) => item.id === sourceItemId)
+    const toIndex = items.findIndex((item) => item.id === targetItemId)
+    if (fromIndex === -1 || toIndex === -1) return
+
+    const reordered = [...items]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
     reorderItems.mutate(
       { checklistId: checklist.id, request: { itemIds: reordered.map((item) => item.id) } },
       { onError: (error) => toast.error(getErrorMessage(error, '순서 변경에 실패했습니다.')) },
@@ -201,10 +239,16 @@ export function ChecklistsPage() {
                         item={item}
                         isFirst={index === 0}
                         isLast={index === checklist.items.length - 1}
+                        isDragging={draggedItemId === item.id}
+                        isDragOver={dragOverItemId === item.id && draggedItemId !== item.id}
                         onToggle={(itemId) => handleToggle(checklist.id, itemId)}
                         onDelete={(itemId) => handleDeleteItem(checklist.id, itemId)}
                         onMoveUp={(itemId) => handleMove(checklist, itemId, 'up')}
                         onMoveDown={(itemId) => handleMove(checklist, itemId, 'down')}
+                        onDragStart={(itemId) => handleItemDragStart(checklist.id, itemId)}
+                        onDragOverItem={(itemId) => handleItemDragOver(checklist.id, itemId)}
+                        onDrop={(itemId) => handleItemDrop(checklist, itemId)}
+                        onDragEnd={handleItemDragEnd}
                         disabled={isItemMutating}
                       />
                     ))}
