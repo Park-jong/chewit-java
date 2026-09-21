@@ -14,6 +14,9 @@ import {
   useToggleChecklistItemMutation,
 } from '@/features/checklists/hooks'
 import { AddChecklistForm } from '@/features/checklists/AddChecklistForm'
+import { useCategoriesQuery } from '@/features/categories/hooks'
+import { CategoryBadge } from '@/features/categories/CategoryBadge'
+import { CategorySelect } from '@/features/categories/CategorySelect'
 import { AddChecklistItemForm } from '@/features/checklists/AddChecklistItemForm'
 import { ChecklistItemRow } from '@/features/checklists/ChecklistItemRow'
 import type { Checklist } from '@/features/checklists/types'
@@ -25,6 +28,8 @@ export function ChecklistsPage() {
   const { user, logout } = useAuth()
 
   const checklistsQuery = useChecklistsQuery()
+  const categoriesQuery = useCategoriesQuery()
+  const categories = categoriesQuery.data ?? []
   const createChecklist = useCreateChecklistMutation()
   const deleteChecklist = useDeleteChecklistMutation()
   const renameChecklist = useRenameChecklistMutation()
@@ -47,9 +52,9 @@ export function ChecklistsPage() {
     deleteItem.isPending ||
     reorderItems.isPending
 
-  function handleAdd(title: string) {
+  function handleAdd(title: string, categoryId: number | null) {
     createChecklist.mutate(
-      { title },
+      { title, categoryId },
       { onError: (error) => toast.error(getErrorMessage(error, '체크리스트 추가에 실패했습니다.')) },
     )
   }
@@ -72,8 +77,15 @@ export function ChecklistsPage() {
     const trimmed = title.trim()
     if (!trimmed || trimmed === checklist.title) return
     renameChecklist.mutate(
-      { id: checklist.id, request: { title: trimmed } },
+      { id: checklist.id, request: { title: trimmed, categoryId: checklist.category?.id ?? null } },
       { onError: (error) => toast.error(getErrorMessage(error, '이름 변경에 실패했습니다.')) },
+    )
+  }
+
+  function handleChangeCategory(checklist: Checklist, categoryId: number | null) {
+    renameChecklist.mutate(
+      { id: checklist.id, request: { title: checklist.title, categoryId } },
+      { onError: (error) => toast.error(getErrorMessage(error, '카테고리 변경에 실패했습니다.')) },
     )
   }
 
@@ -163,7 +175,7 @@ export function ChecklistsPage() {
 
       <h2 className="text-lg font-medium">체크리스트</h2>
 
-      <AddChecklistForm onAdd={handleAdd} disabled={createChecklist.isPending} />
+      <AddChecklistForm onAdd={handleAdd} categories={categories} disabled={createChecklist.isPending} />
 
       <div className="flex flex-col gap-2">
         {checklistsQuery.isPending && (
@@ -194,6 +206,7 @@ export function ChecklistsPage() {
                   )}
                   <span className="min-w-0 flex-1">
                     <p className="truncate">{checklist.title}</p>
+                    <CategoryBadge category={checklist.category} />
                     <p className="text-sm text-muted-foreground">
                       {doneCount}/{checklist.items.length} 완료
                     </p>
@@ -223,6 +236,14 @@ export function ChecklistsPage() {
                       이름 변경
                     </Button>
                   </form>
+
+                  <CategorySelect
+                    categories={categories}
+                    value={checklist.category?.id ?? null}
+                    onChange={(categoryId) => handleChangeCategory(checklist, categoryId)}
+                    disabled={renameChecklist.isPending}
+                    className="rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
+                  />
 
                   <AddChecklistItemForm
                     onAdd={(content) => handleAddItem(checklist.id, content)}

@@ -1,5 +1,7 @@
 package com.chewworld.chewit.controller;
 
+import com.chewworld.chewit.dto.TaskDtos.CarryOverRequest;
+import com.chewworld.chewit.dto.TaskDtos.CarryOverResponse;
 import com.chewworld.chewit.dto.TaskDtos.CreateTaskRequest;
 import com.chewworld.chewit.dto.TaskDtos.TaskResponse;
 import com.chewworld.chewit.dto.TaskDtos.UpdateTaskRequest;
@@ -44,6 +46,14 @@ public class TaskController {
             @Valid @RequestBody CreateTaskRequest request
     ) {
         return taskService.create(principal.userId(), request);
+    }
+
+    @PostMapping("/carry-over")
+    public CarryOverResponse carryOver(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CarryOverRequest request
+    ) {
+        return taskService.carryOver(principal.userId(), request);
     }
 
     @PatchMapping("/{id}")

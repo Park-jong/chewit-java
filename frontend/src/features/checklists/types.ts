@@ -1,3 +1,5 @@
+import type { CategorySummary } from '@/features/categories/types'
+
 export interface ChecklistItem {
   id: number
   content: string
@@ -10,14 +12,17 @@ export interface Checklist {
   title: string
   items: ChecklistItem[]
   createdAt: string
+  category: CategorySummary | null
 }
 
 export interface CreateChecklistRequest {
   title: string
+  categoryId?: number | null
 }
 
 export interface UpdateChecklistRequest {
   title: string
+  categoryId?: number | null
 }
 
 export interface CreateChecklistItemRequest {

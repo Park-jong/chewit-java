@@ -7,6 +7,7 @@ import { EventsPage } from '@/routes/EventsPage'
 import { ChecklistsPage } from '@/routes/ChecklistsPage'
 import { StatsPage } from '@/routes/StatsPage'
 import { CalendarPage } from '@/routes/CalendarPage'
+import { CategoriesPage } from '@/routes/CategoriesPage'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/checklists" element={<ChecklistsPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
       </Route>
     </Routes>
   )

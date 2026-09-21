@@ -1,5 +1,7 @@
 package com.chewworld.chewit.service;
 
+import com.chewworld.chewit.dto.TaskDtos.CarryOverRequest;
+import com.chewworld.chewit.dto.TaskDtos.CarryOverResponse;
 import com.chewworld.chewit.dto.TaskDtos.CreateTaskRequest;
 import com.chewworld.chewit.dto.TaskDtos.TaskResponse;
 import com.chewworld.chewit.dto.TaskDtos.UpdateTaskRequest;
@@ -16,6 +18,8 @@ public interface TaskService {
     TaskResponse update(Long userId, Long taskId, UpdateTaskRequest request);
 
     TaskResponse toggleDone(Long userId, Long taskId);
+
+    CarryOverResponse carryOver(Long userId, CarryOverRequest request);
 
     void delete(Long userId, Long taskId);
 }

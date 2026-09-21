@@ -13,6 +13,11 @@ vi.mock('@/features/auth/AuthContext', () => ({
 const createMutate = vi.fn()
 const deleteMutate = vi.fn()
 const mockUseEventsQuery = vi.fn()
+const mockUseCategoriesQuery = vi.fn()
+
+vi.mock('@/features/categories/hooks', () => ({
+  useCategoriesQuery: (...args: unknown[]) => mockUseCategoriesQuery(...args),
+}))
 
 vi.mock('@/features/events/hooks', () => ({
   useEventsQuery: (...args: unknown[]) => mockUseEventsQuery(...args),
@@ -28,12 +33,14 @@ const sampleEvent: Event = {
   recurrence: 'NONE',
   occurrenceDate: todayISO(),
   createdAt: `${todayISO()}T00:00:00Z`,
+  category: null,
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockUseAuth.mockReturnValue({ user: { id: 1, displayName: '테스터' }, logout: vi.fn() })
   mockUseEventsQuery.mockReturnValue({ data: [sampleEvent], isPending: false, isError: false })
+  mockUseCategoriesQuery.mockReturnValue({ data: [], isPending: false, isError: false })
 })
 
 afterEach(() => {
@@ -66,7 +73,7 @@ describe('EventsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '추가' }))
 
     expect(createMutate).toHaveBeenCalledWith(
-      { title: '새 이벤트', date: todayISO(), recurrence: 'NONE' },
+      { title: '새 이벤트', date: todayISO(), recurrence: 'NONE', categoryId: null },
       expect.anything(),
     )
   })

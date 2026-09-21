@@ -28,6 +28,7 @@ const sampleChecklist: Checklist = {
   title: '장보기',
   items: [],
   createdAt: '2026-03-05T00:00:00Z',
+  category: null,
 }
 
 describe('checklists api', () => {
@@ -54,6 +55,17 @@ describe('checklists api', () => {
     await renameChecklist(1, { title: '장보기2' })
 
     expect(mockedApi.patch).toHaveBeenCalledWith('/checklists/1', { title: '장보기2' })
+  })
+
+  it('createChecklist와 renameChecklist는 categoryId를 요청 바디에 포함해 전달한다', async () => {
+    mockedApi.post.mockResolvedValue({ data: sampleChecklist })
+    mockedApi.patch.mockResolvedValue({ data: sampleChecklist })
+
+    await createChecklist({ title: '장보기', categoryId: 5 })
+    await renameChecklist(1, { title: '장보기', categoryId: null })
+
+    expect(mockedApi.post).toHaveBeenCalledWith('/checklists', { title: '장보기', categoryId: 5 })
+    expect(mockedApi.patch).toHaveBeenCalledWith('/checklists/1', { title: '장보기', categoryId: null })
   })
 
   it('deleteChecklist는 DELETE /checklists/:id를 호출한다', async () => {

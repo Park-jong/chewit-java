@@ -1,5 +1,6 @@
 package com.chewworld.chewit.dto;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
@@ -12,12 +13,14 @@ public class ChecklistDtos {
     }
 
     public record CreateChecklistRequest(
-            @NotBlank String title
+            @NotBlank String title,
+            Long categoryId
     ) {
     }
 
     public record UpdateChecklistRequest(
-            @NotBlank String title
+            @NotBlank String title,
+            Long categoryId
     ) {
     }
 
@@ -48,7 +51,8 @@ public class ChecklistDtos {
             Long id,
             String title,
             List<ChecklistItemResponse> items,
-            Instant createdAt
+            Instant createdAt,
+            CategorySummary category
     ) {
     }
 }

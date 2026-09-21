@@ -2,24 +2,28 @@ import { useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CategorySelect } from '@/features/categories/CategorySelect'
+import type { Category } from '@/features/categories/types'
 import { RECURRENCE_LABELS, RECURRENCE_ORDER, type RecurrenceType } from './types'
 
 interface AddEventFormProps {
-  onAdd: (title: string, date: string, recurrence: RecurrenceType) => void
+  onAdd: (title: string, date: string, recurrence: RecurrenceType, categoryId: number | null) => void
   defaultDate: string
+  categories: Category[]
   disabled?: boolean
 }
 
-export function AddEventForm({ onAdd, defaultDate, disabled }: AddEventFormProps) {
+export function AddEventForm({ onAdd, defaultDate, categories, disabled }: AddEventFormProps) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(defaultDate)
   const [recurrence, setRecurrence] = useState<RecurrenceType>('NONE')
+  const [categoryId, setCategoryId] = useState<number | null>(null)
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const trimmed = title.trim()
     if (!trimmed || !date) return
-    onAdd(trimmed, date, recurrence)
+    onAdd(trimmed, date, recurrence, categoryId)
     setTitle('')
     setRecurrence('NONE')
   }
@@ -52,6 +56,12 @@ export function AddEventForm({ onAdd, defaultDate, disabled }: AddEventFormProps
             </option>
           ))}
         </select>
+        <CategorySelect
+          categories={categories}
+          value={categoryId}
+          onChange={setCategoryId}
+          disabled={disabled}
+        />
         <Button
           type="submit"
           size="icon"

@@ -125,7 +125,7 @@ class StatsServiceImplTest {
         when(taskRepository.findByUser_IdAndDateBetween(USER_ID, MONTH.atDay(1), MONTH.atEndOfMonth())).thenReturn(List.of());
         when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
         when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-        EventResponse occurrence = new EventResponse(1L, "회의", null, LocalDate.of(2026, 9, 1), RecurrenceType.WEEKLY, LocalDate.of(2026, 9, 1), null);
+        EventResponse occurrence = new EventResponse(1L, "회의", null, LocalDate.of(2026, 9, 1), RecurrenceType.WEEKLY, LocalDate.of(2026, 9, 1), null, null);
         when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of(occurrence, occurrence));
 
         MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { api } from '@/lib/api'
 import { listEventsByMonth, createEvent, updateEvent, deleteEvent } from './api'
-import type { Event } from './types'
+import type { CreateEventRequest, Event } from './types'
 
 vi.mock('@/lib/api', () => ({
   api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
@@ -21,6 +21,7 @@ const sampleEvent: Event = {
   recurrence: 'YEARLY',
   occurrenceDate: '2026-03-05',
   createdAt: '2026-03-05T00:00:00Z',
+  category: null,
 }
 
 describe('events api', () => {
@@ -36,6 +37,20 @@ describe('events api', () => {
   it('createEvent는 POST /events에 요청 바디를 전달한다', async () => {
     mockedApi.post.mockResolvedValue({ data: sampleEvent })
     const request = { title: '생일', date: '2026-03-05', recurrence: 'YEARLY' as const }
+
+    await createEvent(request)
+
+    expect(mockedApi.post).toHaveBeenCalledWith('/events', request)
+  })
+
+  it('createEvent는 categoryId를 요청 바디에 포함해 전달한다', async () => {
+    mockedApi.post.mockResolvedValue({ data: sampleEvent })
+    const request: CreateEventRequest = {
+      title: '생일',
+      date: '2026-03-05',
+      recurrence: 'YEARLY',
+      categoryId: 5,
+    }
 
     await createEvent(request)
 

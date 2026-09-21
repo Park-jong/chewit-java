@@ -1,5 +1,6 @@
 package com.chewworld.chewit.service;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.dto.EventDtos.CreateEventRequest;
 import com.chewworld.chewit.dto.EventDtos.EventResponse;
 import com.chewworld.chewit.dto.EventDtos.UpdateEventRequest;
@@ -23,6 +24,7 @@ public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
+    private final CategoryService categoryService;
 
     @Override
     @Transactional(readOnly = true)
@@ -43,6 +45,7 @@ public class EventServiceImpl implements EventService {
                 .memo(request.memo())
                 .date(request.date())
                 .recurrence(request.recurrence())
+                .category(categoryService.resolveOwned(userId, request.categoryId()))
                 .build();
         eventRepository.save(event);
         return toResponse(event, event.getDate());
@@ -56,6 +59,7 @@ public class EventServiceImpl implements EventService {
         event.setMemo(request.memo());
         event.setDate(request.date());
         event.setRecurrence(request.recurrence());
+        event.setCategory(categoryService.resolveOwned(userId, request.categoryId()));
         return toResponse(event, event.getDate());
     }
 
@@ -119,7 +123,8 @@ public class EventServiceImpl implements EventService {
                 event.getDate(),
                 event.getRecurrence(),
                 occurrenceDate,
-                event.getCreatedAt()
+                event.getCreatedAt(),
+                CategorySummary.from(event.getCategory())
         );
     }
 }

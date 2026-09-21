@@ -10,6 +10,7 @@ import {
 } from '@/features/events/hooks'
 import { EventItem } from '@/features/events/EventItem'
 import { AddEventForm } from '@/features/events/AddEventForm'
+import { useCategoriesQuery } from '@/features/categories/hooks'
 import type { Event, RecurrenceType } from '@/features/events/types'
 import {
   addMonthsISO,
@@ -58,6 +59,7 @@ export function EventsPage() {
   const [selectedDate, setSelectedDate] = useState(todayISO())
 
   const eventsQuery = useEventsQuery(month)
+  const categoriesQuery = useCategoriesQuery()
   const createEvent = useCreateEventMutation()
   const deleteEvent = useDeleteEventMutation()
 
@@ -74,9 +76,14 @@ export function EventsPage() {
     }
   }
 
-  function handleAdd(title: string, date: string, recurrence: RecurrenceType) {
+  function handleAdd(
+    title: string,
+    date: string,
+    recurrence: RecurrenceType,
+    categoryId: number | null,
+  ) {
     createEvent.mutate(
-      { title, date, recurrence },
+      { title, date, recurrence, categoryId },
       {
         onSuccess: () => setSelectedDate(date),
         onError: (error) => toast.error(getErrorMessage(error, '이벤트 추가에 실패했습니다.')),
@@ -193,6 +200,7 @@ export function EventsPage() {
           key={selectedDate}
           onAdd={handleAdd}
           defaultDate={selectedDate}
+          categories={categoriesQuery.data ?? []}
           disabled={createEvent.isPending}
         />
 

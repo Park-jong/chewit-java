@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createTask, deleteTask, listTasks, toggleTask, updateTask } from './api'
-import type { CreateTaskRequest, UpdateTaskRequest } from './types'
+import { carryOverTasks, createTask, deleteTask, listTasks, toggleTask, updateTask } from './api'
+import type { CarryOverRequest, CreateTaskRequest, UpdateTaskRequest } from './types'
 
 const TASKS_QUERY_KEY = ['tasks']
 
@@ -37,6 +37,14 @@ export function useToggleTaskMutation() {
   const invalidate = useInvalidateTasks()
   return useMutation({
     mutationFn: (id: number) => toggleTask(id),
+    onSuccess: invalidate,
+  })
+}
+
+export function useCarryOverTasksMutation() {
+  const invalidate = useInvalidateTasks()
+  return useMutation({
+    mutationFn: (request: CarryOverRequest) => carryOverTasks(request),
     onSuccess: invalidate,
   })
 }

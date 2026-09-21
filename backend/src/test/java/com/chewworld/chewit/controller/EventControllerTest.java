@@ -46,7 +46,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     void list_월별로_이벤트를_조회한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 3, 5);
         when(eventService.listByMonth(1L, YearMonth.of(2026, 3))).thenReturn(List.of(
-                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null)));
+                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null)));
 
         mockMvc.perform(get("/api/events").param("month", "2026-03").with(authenticatedAs(1L)))
                 .andExpect(status().isOk())
@@ -70,9 +70,9 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     @Test
     void create_성공하면_생성된_이벤트를_반환한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 3, 5);
-        CreateEventRequest request = new CreateEventRequest("생일", null, date, RecurrenceType.YEARLY);
+        CreateEventRequest request = new CreateEventRequest("생일", null, date, RecurrenceType.YEARLY, null);
         when(eventService.create(eq(1L), any())).thenReturn(
-                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null));
+                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null));
 
         mockMvc.perform(post("/api/events")
                         .with(authenticatedAs(1L))
@@ -84,7 +84,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
 
     @Test
     void create_제목이_공백이면_400을_반환한다() throws Exception {
-        CreateEventRequest request = new CreateEventRequest("  ", null, LocalDate.now(), RecurrenceType.NONE);
+        CreateEventRequest request = new CreateEventRequest("  ", null, LocalDate.now(), RecurrenceType.NONE, null);
 
         mockMvc.perform(post("/api/events")
                         .with(authenticatedAs(1L))
@@ -96,9 +96,9 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     @Test
     void update_성공하면_수정된_이벤트를_반환한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 3, 6);
-        UpdateEventRequest request = new UpdateEventRequest("생일2", null, date, RecurrenceType.NONE);
+        UpdateEventRequest request = new UpdateEventRequest("생일2", null, date, RecurrenceType.NONE, null);
         when(eventService.update(eq(1L), eq(1L), any())).thenReturn(
-                new EventResponse(1L, "생일2", null, date, RecurrenceType.NONE, date, null));
+                new EventResponse(1L, "생일2", null, date, RecurrenceType.NONE, date, null, null));
 
         mockMvc.perform(patch("/api/events/{id}", 1L)
                         .with(authenticatedAs(1L))
@@ -110,7 +110,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
 
     @Test
     void update_소유하지_않은_이벤트면_404를_반환한다() throws Exception {
-        UpdateEventRequest request = new UpdateEventRequest("생일2", null, LocalDate.now(), RecurrenceType.NONE);
+        UpdateEventRequest request = new UpdateEventRequest("생일2", null, LocalDate.now(), RecurrenceType.NONE, null);
         when(eventService.update(eq(1L), eq(1L), any()))
                 .thenThrow(new ResourceNotFoundException("이벤트를 찾을 수 없습니다."));
 

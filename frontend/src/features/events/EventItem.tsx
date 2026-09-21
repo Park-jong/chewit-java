@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { CategoryBadge } from '@/features/categories/CategoryBadge'
 import { formatMonthDay } from '@/lib/date'
 import { RECURRENCE_LABELS, type Event } from './types'
 
@@ -19,6 +20,7 @@ export function EventItem({ event, onDelete, disabled }: EventItemProps) {
           {event.recurrence !== 'NONE' && ` · ${RECURRENCE_LABELS[event.recurrence]}`}
           {event.memo && ` · ${event.memo}`}
         </p>
+        <CategoryBadge category={event.category} />
       </div>
       <Button
         variant="ghost"

@@ -1,6 +1,7 @@
-import { Trash2 } from 'lucide-react'
+import { CalendarArrowUp, Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { CategoryBadge } from '@/features/categories/CategoryBadge'
 import { cn } from '@/lib/utils'
 import type { Task } from './types'
 
@@ -8,10 +9,11 @@ interface TaskItemProps {
   task: Task
   onToggle: (id: number) => void
   onDelete: (id: number) => void
+  onMoveToTomorrow: (task: Task) => void
   disabled?: boolean
 }
 
-export function TaskItem({ task, onToggle, onDelete, disabled }: TaskItemProps) {
+export function TaskItem({ task, onToggle, onDelete, onMoveToTomorrow, disabled }: TaskItemProps) {
   return (
     <div className="flex items-center gap-3 rounded-md border p-3">
       <Checkbox
@@ -26,7 +28,20 @@ export function TaskItem({ task, onToggle, onDelete, disabled }: TaskItemProps) 
         {task.memo && (
           <p className="truncate text-sm text-muted-foreground">{task.memo}</p>
         )}
+        <CategoryBadge category={task.category} />
       </div>
+      {!task.done && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onMoveToTomorrow(task)}
+          aria-label="내일로 이월"
+        >
+          <CalendarArrowUp className="size-4" />
+          내일로
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon"

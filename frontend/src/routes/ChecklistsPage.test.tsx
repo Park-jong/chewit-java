@@ -14,6 +14,11 @@ const deleteMutate = vi.fn()
 const toggleMutate = vi.fn()
 const addItemMutate = vi.fn()
 const mockUseChecklistsQuery = vi.fn()
+const mockUseCategoriesQuery = vi.fn()
+
+vi.mock('@/features/categories/hooks', () => ({
+  useCategoriesQuery: (...args: unknown[]) => mockUseCategoriesQuery(...args),
+}))
 
 vi.mock('@/features/checklists/hooks', () => ({
   useChecklistsQuery: (...args: unknown[]) => mockUseChecklistsQuery(...args),
@@ -31,12 +36,14 @@ const sampleChecklist: Checklist = {
   title: '샘플 체크리스트',
   items: [{ id: 10, content: '항목 1', checked: false, sortOrder: 0 }],
   createdAt: '2026-01-01T00:00:00Z',
+  category: null,
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockUseAuth.mockReturnValue({ user: { id: 1, displayName: '테스터' }, logout: vi.fn() })
   mockUseChecklistsQuery.mockReturnValue({ data: [sampleChecklist], isPending: false, isError: false })
+  mockUseCategoriesQuery.mockReturnValue({ data: [], isPending: false, isError: false })
 })
 
 afterEach(() => {

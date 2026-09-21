@@ -1,8 +1,10 @@
 package com.chewworld.chewit.service;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.dto.EventDtos.CreateEventRequest;
 import com.chewworld.chewit.dto.EventDtos.EventResponse;
 import com.chewworld.chewit.dto.EventDtos.UpdateEventRequest;
+import com.chewworld.chewit.entity.Category;
 import com.chewworld.chewit.entity.Event;
 import com.chewworld.chewit.entity.RecurrenceType;
 import com.chewworld.chewit.entity.User;
@@ -35,6 +37,9 @@ class EventServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private CategoryService categoryService;
 
     @InjectMocks
     private EventServiceImpl eventService;
@@ -127,7 +132,7 @@ class EventServiceImplTest {
 
     @Test
     void create_이벤트를_생성한다() {
-        CreateEventRequest request = new CreateEventRequest("회의", "메모", LocalDate.of(2026, 8, 17), RecurrenceType.WEEKLY);
+        CreateEventRequest request = new CreateEventRequest("회의", "메모", LocalDate.of(2026, 8, 17), RecurrenceType.WEEKLY, null);
         when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
 
         EventResponse response = eventService.create(USER_ID, request);
@@ -138,10 +143,48 @@ class EventServiceImplTest {
     }
 
     @Test
+    void create_categoryId가_있으면_소유한_카테고리를_붙인다() {
+        LocalDate date = LocalDate.of(2026, 8, 17);
+        Category category = Category.builder().id(5L).name("약속").color("#22C55E").build();
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
+        when(categoryService.resolveOwned(USER_ID, 5L)).thenReturn(category);
+
+        EventResponse response = eventService.create(USER_ID,
+                new CreateEventRequest("회의", null, date, RecurrenceType.NONE, 5L));
+
+        assertThat(response.category()).isEqualTo(new CategorySummary(5L, "약속", "#22C55E"));
+    }
+
+    @Test
+    void update_타인의_카테고리면_예외() {
+        Event event = Event.builder().id(1L).title("기존").date(LocalDate.of(2026, 8, 1)).recurrence(RecurrenceType.NONE).build();
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
+        when(categoryService.resolveOwned(USER_ID, 9L)).thenThrow(new ResourceNotFoundException("카테고리를 찾을 수 없습니다."));
+
+        assertThatThrownBy(() -> eventService.update(USER_ID, 1L,
+                new UpdateEventRequest("수정", null, LocalDate.now(), RecurrenceType.NONE, 9L)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void update_categoryId가_null이면_카테고리를_해제한다() {
+        Category category = Category.builder().id(5L).name("약속").color("#22C55E").build();
+        Event event = Event.builder().id(1L).title("기존").date(LocalDate.of(2026, 8, 1))
+                .recurrence(RecurrenceType.NONE).category(category).build();
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
+
+        EventResponse response = eventService.update(USER_ID, 1L,
+                new UpdateEventRequest("기존", null, LocalDate.of(2026, 8, 1), RecurrenceType.NONE, null));
+
+        assertThat(response.category()).isNull();
+        assertThat(event.getCategory()).isNull();
+    }
+
+    @Test
     void update_소유한_이벤트면_수정한다() {
         Event event = Event.builder().id(1L).title("기존").date(LocalDate.of(2026, 8, 1)).recurrence(RecurrenceType.NONE).build();
         when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
-        UpdateEventRequest request = new UpdateEventRequest("수정됨", "새메모", LocalDate.of(2026, 9, 1), RecurrenceType.MONTHLY);
+        UpdateEventRequest request = new UpdateEventRequest("수정됨", "새메모", LocalDate.of(2026, 9, 1), RecurrenceType.MONTHLY, null);
 
         EventResponse response = eventService.update(USER_ID, 1L, request);
 

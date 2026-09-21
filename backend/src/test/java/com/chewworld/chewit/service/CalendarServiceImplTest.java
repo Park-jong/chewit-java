@@ -62,7 +62,7 @@ class CalendarServiceImplTest {
         when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(10L, 11L), monthStart, monthEnd))
                 .thenReturn(List.of(completion));
 
-        EventResponse event = new EventResponse(20L, "약속", null, target, null, target, null);
+        EventResponse event = new EventResponse(20L, "약속", null, target, null, target, null, null);
         when(eventService.listByMonth(USER_ID, month)).thenReturn(List.of(event));
 
         CalendarMonthResponse response = calendarService.getMonth(USER_ID, month);

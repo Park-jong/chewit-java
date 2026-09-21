@@ -1,5 +1,6 @@
 package com.chewworld.chewit.service;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.dto.ChecklistDtos.ChecklistItemResponse;
 import com.chewworld.chewit.dto.ChecklistDtos.ChecklistResponse;
 import com.chewworld.chewit.dto.ChecklistDtos.CreateChecklistItemRequest;
@@ -26,6 +27,7 @@ public class ChecklistServiceImpl implements ChecklistService {
 
     private final ChecklistRepository checklistRepository;
     private final UserRepository userRepository;
+    private final CategoryService categoryService;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,6 +43,7 @@ public class ChecklistServiceImpl implements ChecklistService {
         Checklist checklist = Checklist.builder()
                 .user(userRepository.getReferenceById(userId))
                 .title(request.title())
+                .category(categoryService.resolveOwned(userId, request.categoryId()))
                 .build();
         checklistRepository.save(checklist);
         return toResponse(checklist);
@@ -51,6 +54,7 @@ public class ChecklistServiceImpl implements ChecklistService {
     public ChecklistResponse rename(Long userId, Long checklistId, UpdateChecklistRequest request) {
         Checklist checklist = getOwnedChecklist(userId, checklistId);
         checklist.setTitle(request.title());
+        checklist.setCategory(categoryService.resolveOwned(userId, request.categoryId()));
         return toResponse(checklist);
     }
 
@@ -137,6 +141,7 @@ public class ChecklistServiceImpl implements ChecklistService {
                 .sorted((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
                 .map(item -> new ChecklistItemResponse(item.getId(), item.getContent(), item.isChecked(), item.getSortOrder()))
                 .toList();
-        return new ChecklistResponse(checklist.getId(), checklist.getTitle(), items, checklist.getCreatedAt());
+        return new ChecklistResponse(checklist.getId(), checklist.getTitle(), items, checklist.getCreatedAt(),
+                CategorySummary.from(checklist.getCategory()));
     }
 }

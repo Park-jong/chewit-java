@@ -45,7 +45,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
     @Test
     void list_전체_체크리스트를_반환한다() throws Exception {
         when(checklistService.listAll(1L)).thenReturn(List.of(
-                new ChecklistResponse(1L, "장보기", List.of(), null)));
+                new ChecklistResponse(1L, "장보기", List.of(), null, null)));
 
         mockMvc.perform(get("/api/checklists").with(authenticatedAs(1L)))
                 .andExpect(status().isOk())
@@ -54,9 +54,9 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
 
     @Test
     void create_성공하면_생성된_체크리스트를_반환한다() throws Exception {
-        CreateChecklistRequest request = new CreateChecklistRequest("장보기");
+        CreateChecklistRequest request = new CreateChecklistRequest("장보기", null);
         when(checklistService.create(eq(1L), any())).thenReturn(
-                new ChecklistResponse(1L, "장보기", List.of(), null));
+                new ChecklistResponse(1L, "장보기", List.of(), null, null));
 
         mockMvc.perform(post("/api/checklists")
                         .with(authenticatedAs(1L))
@@ -68,7 +68,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
 
     @Test
     void create_제목이_공백이면_400을_반환한다() throws Exception {
-        CreateChecklistRequest request = new CreateChecklistRequest("  ");
+        CreateChecklistRequest request = new CreateChecklistRequest("  ", null);
 
         mockMvc.perform(post("/api/checklists")
                         .with(authenticatedAs(1L))
@@ -79,9 +79,9 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
 
     @Test
     void rename_성공하면_변경된_제목을_반환한다() throws Exception {
-        UpdateChecklistRequest request = new UpdateChecklistRequest("장보기2");
+        UpdateChecklistRequest request = new UpdateChecklistRequest("장보기2", null);
         when(checklistService.rename(eq(1L), eq(1L), any())).thenReturn(
-                new ChecklistResponse(1L, "장보기2", List.of(), null));
+                new ChecklistResponse(1L, "장보기2", List.of(), null, null));
 
         mockMvc.perform(patch("/api/checklists/{id}", 1L)
                         .with(authenticatedAs(1L))
@@ -101,7 +101,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
     void addItem_성공하면_아이템이_추가된_체크리스트를_반환한다() throws Exception {
         CreateChecklistItemRequest request = new CreateChecklistItemRequest("우유");
         when(checklistService.addItem(eq(1L), eq(1L), any())).thenReturn(
-                new ChecklistResponse(1L, "장보기", List.of(new ChecklistItemResponse(1L, "우유", false, 0)), null));
+                new ChecklistResponse(1L, "장보기", List.of(new ChecklistItemResponse(1L, "우유", false, 0)), null, null));
 
         mockMvc.perform(post("/api/checklists/{id}/items", 1L)
                         .with(authenticatedAs(1L))
@@ -126,7 +126,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
     void updateItem_성공하면_변경된_내용을_반환한다() throws Exception {
         UpdateChecklistItemRequest request = new UpdateChecklistItemRequest("두유");
         when(checklistService.updateItem(eq(1L), eq(1L), eq(1L), any())).thenReturn(
-                new ChecklistResponse(1L, "장보기", List.of(new ChecklistItemResponse(1L, "두유", false, 0)), null));
+                new ChecklistResponse(1L, "장보기", List.of(new ChecklistItemResponse(1L, "두유", false, 0)), null, null));
 
         mockMvc.perform(patch("/api/checklists/{id}/items/{itemId}", 1L, 1L)
                         .with(authenticatedAs(1L))
@@ -139,7 +139,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
     @Test
     void toggleItem_체크여부를_반전한다() throws Exception {
         when(checklistService.toggleItem(1L, 1L, 1L)).thenReturn(
-                new ChecklistResponse(1L, "장보기", List.of(new ChecklistItemResponse(1L, "우유", true, 0)), null));
+                new ChecklistResponse(1L, "장보기", List.of(new ChecklistItemResponse(1L, "우유", true, 0)), null, null));
 
         mockMvc.perform(patch("/api/checklists/{id}/items/{itemId}/toggle", 1L, 1L)
                         .with(authenticatedAs(1L)))
@@ -150,7 +150,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
     @Test
     void deleteItem_성공하면_삭제된_결과의_체크리스트를_반환한다() throws Exception {
         when(checklistService.deleteItem(1L, 1L, 1L)).thenReturn(
-                new ChecklistResponse(1L, "장보기", List.of(), null));
+                new ChecklistResponse(1L, "장보기", List.of(), null, null));
 
         mockMvc.perform(delete("/api/checklists/{id}/items/{itemId}", 1L, 1L)
                         .with(authenticatedAs(1L)))
@@ -165,7 +165,7 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
                 new ChecklistResponse(1L, "장보기", List.of(
                         new ChecklistItemResponse(2L, "두유", false, 0),
                         new ChecklistItemResponse(1L, "우유", false, 1)
-                ), null));
+                ), null, null));
 
         mockMvc.perform(patch("/api/checklists/{id}/items/reorder", 1L)
                         .with(authenticatedAs(1L))

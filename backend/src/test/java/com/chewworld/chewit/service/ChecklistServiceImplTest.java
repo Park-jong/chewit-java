@@ -1,11 +1,13 @@
 package com.chewworld.chewit.service;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.dto.ChecklistDtos.ChecklistResponse;
 import com.chewworld.chewit.dto.ChecklistDtos.CreateChecklistItemRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.CreateChecklistRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.ReorderItemsRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.UpdateChecklistItemRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.UpdateChecklistRequest;
+import com.chewworld.chewit.entity.Category;
 import com.chewworld.chewit.entity.Checklist;
 import com.chewworld.chewit.entity.ChecklistItem;
 import com.chewworld.chewit.entity.User;
@@ -39,6 +41,9 @@ class ChecklistServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CategoryService categoryService;
+
     @InjectMocks
     private ChecklistServiceImpl checklistService;
 
@@ -52,7 +57,7 @@ class ChecklistServiceImplTest {
 
     @Test
     void create_체크리스트를_생성한다() {
-        CreateChecklistRequest request = new CreateChecklistRequest("장보기");
+        CreateChecklistRequest request = new CreateChecklistRequest("장보기", null);
         when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
 
         ChecklistResponse response = checklistService.create(USER_ID, request);
@@ -62,11 +67,44 @@ class ChecklistServiceImplTest {
     }
 
     @Test
+    void create_categoryId가_있으면_소유한_카테고리를_붙인다() {
+        Category category = Category.builder().id(5L).name("장보기").color("#F59E0B").build();
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
+        when(categoryService.resolveOwned(USER_ID, 5L)).thenReturn(category);
+
+        ChecklistResponse response = checklistService.create(USER_ID, new CreateChecklistRequest("장보기", 5L));
+
+        assertThat(response.category()).isEqualTo(new CategorySummary(5L, "장보기", "#F59E0B"));
+    }
+
+    @Test
+    void rename_타인의_카테고리면_예외() {
+        Checklist checklist = checklistWithItems();
+        when(checklistRepository.findByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.of(checklist));
+        when(categoryService.resolveOwned(USER_ID, 9L)).thenThrow(new ResourceNotFoundException("카테고리를 찾을 수 없습니다."));
+
+        assertThatThrownBy(() -> checklistService.rename(USER_ID, CHECKLIST_ID, new UpdateChecklistRequest("x", 9L)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void rename_categoryId가_null이면_카테고리를_해제한다() {
+        Checklist checklist = checklistWithItems();
+        checklist.setCategory(Category.builder().id(5L).name("장보기").color("#F59E0B").build());
+        when(checklistRepository.findByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.of(checklist));
+
+        ChecklistResponse response = checklistService.rename(USER_ID, CHECKLIST_ID, new UpdateChecklistRequest("제목", null));
+
+        assertThat(response.category()).isNull();
+        assertThat(checklist.getCategory()).isNull();
+    }
+
+    @Test
     void rename_소유한_체크리스트면_제목을_변경한다() {
         Checklist checklist = checklistWithItems();
         when(checklistRepository.findByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.of(checklist));
 
-        ChecklistResponse response = checklistService.rename(USER_ID, CHECKLIST_ID, new UpdateChecklistRequest("새 제목"));
+        ChecklistResponse response = checklistService.rename(USER_ID, CHECKLIST_ID, new UpdateChecklistRequest("새 제목", null));
 
         assertThat(response.title()).isEqualTo("새 제목");
     }
@@ -165,7 +203,7 @@ class ChecklistServiceImplTest {
     void 소유하지_않은_체크리스트면_예외() {
         when(checklistRepository.findByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> checklistService.rename(USER_ID, CHECKLIST_ID, new UpdateChecklistRequest("x")))
+        assertThatThrownBy(() -> checklistService.rename(USER_ID, CHECKLIST_ID, new UpdateChecklistRequest("x", null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

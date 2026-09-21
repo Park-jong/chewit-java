@@ -1,3 +1,5 @@
+import type { CategorySummary } from '@/features/categories/types'
+
 export type RecurrenceType = 'NONE' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
 
 export const RECURRENCE_ORDER: RecurrenceType[] = ['NONE', 'WEEKLY', 'MONTHLY', 'YEARLY']
@@ -17,6 +19,7 @@ export interface Event {
   recurrence: RecurrenceType
   occurrenceDate: string
   createdAt: string
+  category: CategorySummary | null
 }
 
 export interface CreateEventRequest {
@@ -24,6 +27,7 @@ export interface CreateEventRequest {
   memo?: string
   date: string
   recurrence: RecurrenceType
+  categoryId?: number | null
 }
 
 export interface UpdateEventRequest {
@@ -31,4 +35,5 @@ export interface UpdateEventRequest {
   memo?: string
   date: string
   recurrence: RecurrenceType
+  categoryId?: number | null
 }

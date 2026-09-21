@@ -1,5 +1,6 @@
 package com.chewworld.chewit.dto;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.entity.RecurrenceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,7 +17,8 @@ public class EventDtos {
             @NotBlank String title,
             String memo,
             @NotNull LocalDate date,
-            @NotNull RecurrenceType recurrence
+            @NotNull RecurrenceType recurrence,
+            Long categoryId
     ) {
     }
 
@@ -24,7 +26,8 @@ public class EventDtos {
             @NotBlank String title,
             String memo,
             @NotNull LocalDate date,
-            @NotNull RecurrenceType recurrence
+            @NotNull RecurrenceType recurrence,
+            Long categoryId
     ) {
     }
 
@@ -35,7 +38,8 @@ public class EventDtos {
             LocalDate date,
             RecurrenceType recurrence,
             LocalDate occurrenceDate,
-            Instant createdAt
+            Instant createdAt,
+            CategorySummary category
     ) {
     }
 }

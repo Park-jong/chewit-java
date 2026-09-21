@@ -1,5 +1,11 @@
 import { api } from '@/lib/api'
-import type { CreateTaskRequest, Task, UpdateTaskRequest } from './types'
+import type {
+  CarryOverRequest,
+  CarryOverResponse,
+  CreateTaskRequest,
+  Task,
+  UpdateTaskRequest,
+} from './types'
 
 export async function listTasks(date: string): Promise<Task[]> {
   const { data } = await api.get<Task[]>('/tasks', { params: { date } })
@@ -18,6 +24,11 @@ export async function updateTask(id: number, request: UpdateTaskRequest): Promis
 
 export async function toggleTask(id: number): Promise<Task> {
   const { data } = await api.patch<Task>(`/tasks/${id}/toggle`)
+  return data
+}
+
+export async function carryOverTasks(request: CarryOverRequest): Promise<CarryOverResponse> {
+  const { data } = await api.post<CarryOverResponse>('/tasks/carry-over', request)
   return data
 }
 

@@ -1,12 +1,18 @@
 import { Link, useLocation } from 'react-router-dom'
 
-const NAV_ITEMS = [
+interface NavItem {
+  to: string
+  label: string
+}
+
+const NAV_ITEMS: NavItem[] = [
   { to: '/', label: '오늘' },
   { to: '/events', label: '이벤트' },
   { to: '/checklists', label: '체크리스트' },
   { to: '/stats', label: '통계' },
   { to: '/calendar', label: '캘린더' },
-] as const
+  { to: '/categories', label: '카테고리' },
+]
 
 export function NavBar() {
   const { pathname } = useLocation()

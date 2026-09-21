@@ -1,9 +1,13 @@
 package com.chewworld.chewit.service;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
+import com.chewworld.chewit.dto.TaskDtos.CarryOverRequest;
+import com.chewworld.chewit.dto.TaskDtos.CarryOverResponse;
 import com.chewworld.chewit.dto.TaskDtos.CreateTaskRequest;
 import com.chewworld.chewit.dto.TaskDtos.TaskResponse;
 import com.chewworld.chewit.dto.TaskDtos.UpdateTaskRequest;
 import com.chewworld.chewit.entity.Task;
+import com.chewworld.chewit.exception.InvalidRequestException;
 import com.chewworld.chewit.exception.ResourceNotFoundException;
 import com.chewworld.chewit.repository.TaskRepository;
 import com.chewworld.chewit.repository.UserRepository;
@@ -20,6 +24,7 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final CategoryService categoryService;
 
     @Override
     @Transactional(readOnly = true)
@@ -37,6 +42,7 @@ public class TaskServiceImpl implements TaskService {
                 .title(request.title())
                 .memo(request.memo())
                 .date(request.date())
+                .category(categoryService.resolveOwned(userId, request.categoryId()))
                 .build();
         taskRepository.save(task);
         return toResponse(task);
@@ -49,6 +55,7 @@ public class TaskServiceImpl implements TaskService {
         task.setTitle(request.title());
         task.setMemo(request.memo());
         task.setDate(request.date());
+        task.setCategory(categoryService.resolveOwned(userId, request.categoryId()));
         return toResponse(task);
     }
 
@@ -58,6 +65,17 @@ public class TaskServiceImpl implements TaskService {
         Task task = getOwnedTask(userId, taskId);
         task.setDone(!task.isDone());
         return toResponse(task);
+    }
+
+    @Override
+    @Transactional
+    public CarryOverResponse carryOver(Long userId, CarryOverRequest request) {
+        if (request.fromDate().equals(request.toDate())) {
+            throw new InvalidRequestException("이월할 날짜가 같은 날짜입니다.");
+        }
+        List<Task> tasks = taskRepository.findByUser_IdAndDateAndDoneFalse(userId, request.fromDate());
+        tasks.forEach(task -> task.setDate(request.toDate()));
+        return new CarryOverResponse(tasks.size(), request.toDate());
     }
 
     @Override
@@ -79,7 +97,8 @@ public class TaskServiceImpl implements TaskService {
                 task.getMemo(),
                 task.getDate(),
                 task.isDone(),
-                task.getCreatedAt()
+                task.getCreatedAt(),
+                CategorySummary.from(task.getCategory())
         );
     }
 }
