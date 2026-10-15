@@ -1,32 +1,29 @@
-# React + TypeScript + Vite
+# chewit frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+chewit 플래너 앱의 React SPA입니다. 프로젝트 개요와 백엔드 실행 방법은 [루트 README](../README.md)를 참고하세요.
 
-Currently, two official plugins are available:
+## 스택
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+React 19, TypeScript, Vite, React Router, TanStack Query, react-hook-form + zod, Tailwind CSS v4, shadcn/ui, Recharts, Vitest
 
-## React Compiler
+## 실행
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # 개발 서버 (http://localhost:5173)
+npm test         # Vitest 실행
+npm run build    # tsc -b && vite build
+npm run lint     # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+개발 서버는 `/api` 요청을 `http://localhost:8080`(백엔드)으로 프록시합니다.
+
+## 폴더 구조
+
+```
+src/
+├─ features/    # 도메인별 api / hooks / types / 컴포넌트 (auth, tasks, routines, events, checklists, categories, calendar, stats)
+├─ routes/      # 페이지 컴포넌트
+├─ components/  # 공용 + shadcn/ui 컴포넌트
+└─ lib/         # axios 인스턴스, 날짜 유틸 등
+```
