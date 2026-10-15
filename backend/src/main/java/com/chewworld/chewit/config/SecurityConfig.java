@@ -16,6 +16,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
 @Configuration
@@ -37,24 +39,28 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+                        .requestMatchers("/api/auth/signup", "/api/auth/login","/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("{\"status\":401,\"message\":\"인증이 필요합니다.\"}");
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.getWriter().write("{\"status\":403,\"message\":\"권한이 없습니다.\"}");
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다."))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeError(response, HttpServletResponse.SC_FORBIDDEN, "권한이 없습니다."))
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /** GlobalExceptionHandler.build()와 동일한 {status, message, timestamp(ISO-8601)} 형태로 응답한다. */
+    private static void writeError(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        // message는 코드 내 고정 문자열(따옴표/역슬래시 없음)이라 별도 이스케이프가 필요 없다.
+        response.getWriter().write("{\"status\":" + status
+                + ",\"message\":\"" + message + "\""
+                + ",\"timestamp\":\"" + Instant.now() + "\"}");
     }
 
     @Bean

@@ -121,9 +121,10 @@ class AuthControllerTest extends com.chewworld.chewit.controller.support.Control
     }
 
     @Test
-    void me_미인증_요청이면_현재_동작상_500을_반환한다() throws Exception {
+    void me_principal이_없으면_401을_반환한다() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("인증이 필요합니다."));
 
         verify(authService, never()).getCurrentUser(any());
     }

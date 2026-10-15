@@ -4,6 +4,7 @@ import com.chewworld.chewit.dto.AuthDtos.AuthResponse;
 import com.chewworld.chewit.dto.AuthDtos.LoginRequest;
 import com.chewworld.chewit.dto.AuthDtos.SignupRequest;
 import com.chewworld.chewit.dto.AuthDtos.UserResponse;
+import com.chewworld.chewit.exception.UnauthorizedException;
 import com.chewworld.chewit.security.UserPrincipal;
 import com.chewworld.chewit.service.AuthService;
 import jakarta.validation.Valid;
@@ -34,6 +35,9 @@ public class AuthController {
 
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            throw new UnauthorizedException("인증이 필요합니다.");
+        }
         return authService.getCurrentUser(principal.userId());
     }
 }

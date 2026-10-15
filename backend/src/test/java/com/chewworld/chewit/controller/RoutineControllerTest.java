@@ -122,9 +122,9 @@ class RoutineControllerTest extends com.chewworld.chewit.controller.support.Cont
     }
 
     @Test
-    void toggle_date파라미터가_없으면_현재_동작상_500을_반환한다() throws Exception {
+    void toggle_date파라미터가_없으면_400을_반환한다() throws Exception {
         mockMvc.perform(patch("/api/routines/{id}/toggle", 1L).with(authenticatedAs(1L)))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
