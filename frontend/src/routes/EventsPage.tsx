@@ -6,6 +6,8 @@ import { useAuth } from '@/features/auth/AuthContext'
 import {
   useCreateEventMutation,
   useDeleteEventMutation,
+  useDeleteEventOccurrenceMutation,
+  useUpdateEventOccurrenceMutation,
   useEventsQuery,
 } from '@/features/events/hooks'
 import { EventItem } from '@/features/events/EventItem'
@@ -62,8 +64,14 @@ export function EventsPage() {
   const categoriesQuery = useCategoriesQuery()
   const createEvent = useCreateEventMutation()
   const deleteEvent = useDeleteEventMutation()
+  const deleteOccurrence = useDeleteEventOccurrenceMutation()
+  const updateOccurrence = useUpdateEventOccurrenceMutation()
 
-  const isMutating = createEvent.isPending || deleteEvent.isPending
+  const isMutating =
+    createEvent.isPending ||
+    deleteEvent.isPending ||
+    deleteOccurrence.isPending ||
+    updateOccurrence.isPending
   const eventsByDate = groupEventsByDate(eventsQuery.data)
   const cells = buildMonthGrid(month)
   const today = todayISO()
@@ -95,6 +103,24 @@ export function EventsPage() {
     deleteEvent.mutate(id, {
       onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')),
     })
+  }
+
+  function handleDeleteOccurrence(id: number, occurrenceDate: string) {
+    deleteOccurrence.mutate(
+      { id, occurrenceDate },
+      { onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')) },
+    )
+  }
+
+  function handleUpdateOccurrence(
+    id: number,
+    occurrenceDate: string,
+    request: { title: string; memo?: string },
+  ) {
+    updateOccurrence.mutate(
+      { id, occurrenceDate, request },
+      { onError: (error) => toast.error(getErrorMessage(error, '수정에 실패했습니다.')) },
+    )
   }
 
   return (
@@ -213,6 +239,8 @@ export function EventsPage() {
               key={`${event.id}-${event.occurrenceDate}`}
               event={event}
               onDelete={handleDelete}
+              onDeleteOccurrence={handleDeleteOccurrence}
+              onUpdateOccurrence={handleUpdateOccurrence}
               disabled={isMutating}
             />
           ))}

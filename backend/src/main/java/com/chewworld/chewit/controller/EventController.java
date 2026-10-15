@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import com.chewworld.chewit.dto.EventDtos.UpdateOccurrenceRequest;
+
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -52,6 +56,25 @@ public class EventController {
             @Valid @RequestBody UpdateEventRequest request
     ) {
         return eventService.update(principal.userId(), id, request);
+    }
+
+    @DeleteMapping("/{id}/occurrences/{date}")
+    public void deleteOccurrence(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        eventService.deleteOccurrence(principal.userId(), id, date);
+    }
+
+    @PatchMapping("/{id}/occurrences/{date}")
+    public EventResponse updateOccurrence(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Valid @RequestBody UpdateOccurrenceRequest request
+    ) {
+        return eventService.updateOccurrence(principal.userId(), id, date, request);
     }
 
     @DeleteMapping("/{id}")

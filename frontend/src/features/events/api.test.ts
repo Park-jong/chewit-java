@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { api } from '@/lib/api'
-import { listEventsByMonth, createEvent, updateEvent, deleteEvent } from './api'
+import {
+  listEventsByMonth,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  deleteEventOccurrence,
+  updateEventOccurrence,
+} from './api'
 import type { CreateEventRequest, Event } from './types'
 
 vi.mock('@/lib/api', () => ({
@@ -22,6 +29,7 @@ const sampleEvent: Event = {
   occurrenceDate: '2026-03-05',
   createdAt: '2026-03-05T00:00:00Z',
   category: null,
+  overridden: false,
 }
 
 describe('events api', () => {
@@ -64,6 +72,24 @@ describe('events api', () => {
     await updateEvent(1, request)
 
     expect(mockedApi.patch).toHaveBeenCalledWith('/events/1', request)
+  })
+
+  it('deleteEventOccurrence는 DELETE /events/:id/occurrences/:date를 호출한다', async () => {
+    mockedApi.delete.mockResolvedValue({ data: undefined })
+
+    await deleteEventOccurrence(1, '2026-03-12')
+
+    expect(mockedApi.delete).toHaveBeenCalledWith('/events/1/occurrences/2026-03-12')
+  })
+
+  it('updateEventOccurrence는 PATCH /events/:id/occurrences/:date에 바디를 전달한다', async () => {
+    mockedApi.patch.mockResolvedValue({ data: { ...sampleEvent, overridden: true } })
+    const request = { title: '이번만', memo: '메모' }
+
+    const result = await updateEventOccurrence(1, '2026-03-12', request)
+
+    expect(mockedApi.patch).toHaveBeenCalledWith('/events/1/occurrences/2026-03-12', request)
+    expect(result.overridden).toBe(true)
   })
 
   it('deleteEvent는 DELETE /events/:id를 호출한다', async () => {

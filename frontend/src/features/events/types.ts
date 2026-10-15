@@ -20,6 +20,12 @@ export interface Event {
   occurrenceDate: string
   createdAt: string
   category: CategorySummary | null
+  overridden: boolean
+}
+
+export interface UpdateOccurrenceRequest {
+  title: string
+  memo?: string
 }
 
 export interface CreateEventRequest {

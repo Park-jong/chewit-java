@@ -125,12 +125,30 @@ class StatsServiceImplTest {
         when(taskRepository.findByUser_IdAndDateBetween(USER_ID, MONTH.atDay(1), MONTH.atEndOfMonth())).thenReturn(List.of());
         when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
         when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-        EventResponse occurrence = new EventResponse(1L, "회의", null, LocalDate.of(2026, 9, 1), RecurrenceType.WEEKLY, LocalDate.of(2026, 9, 1), null, null);
+        EventResponse occurrence = new EventResponse(1L, "회의", null, LocalDate.of(2026, 9, 1), RecurrenceType.WEEKLY, LocalDate.of(2026, 9, 1), null, null, false);
         when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of(occurrence, occurrence));
 
         MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
 
         assertThat(response.eventStats().occurrences()).isEqualTo(2);
+    }
+
+    @Test
+    void monthly_이벤트_건수는_EventService_listByMonth_결과_크기를_사용한다() {
+        // override(삭제/수정) 반영 자체는 EventServiceImplTest에서 검증한다.
+        when(taskRepository.findByUser_IdAndDateBetween(USER_ID, MONTH.atDay(1), MONTH.atEndOfMonth())).thenReturn(List.of());
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        // 주간 반복 중 skipped 회차는 EventService가 이미 제외한 상태
+        LocalDate d = LocalDate.of(2026, 9, 1);
+        when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of(
+                new EventResponse(1L, "회의", null, d, RecurrenceType.WEEKLY, d, null, null, false),
+                new EventResponse(1L, "회의", null, d, RecurrenceType.WEEKLY, d.plusWeeks(2), null, null, false),
+                new EventResponse(1L, "특별", null, d, RecurrenceType.WEEKLY, d.plusWeeks(3), null, null, true)));
+
+        MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
+
+        assertThat(response.eventStats().occurrences()).isEqualTo(3);
     }
 
     @Test

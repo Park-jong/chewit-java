@@ -39,7 +39,14 @@ public class EventDtos {
             RecurrenceType recurrence,
             LocalDate occurrenceDate,
             Instant createdAt,
-            CategorySummary category
+            CategorySummary category,
+            boolean overridden
+    ) {
+    }
+
+    public record UpdateOccurrenceRequest(
+            @NotBlank String title,
+            String memo
     ) {
     }
 }

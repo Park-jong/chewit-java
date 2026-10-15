@@ -12,6 +12,8 @@ vi.mock('@/features/auth/AuthContext', () => ({
 
 const createMutate = vi.fn()
 const deleteMutate = vi.fn()
+const deleteOccurrenceMutate = vi.fn()
+const updateOccurrenceMutate = vi.fn()
 const mockUseEventsQuery = vi.fn()
 const mockUseCategoriesQuery = vi.fn()
 
@@ -23,6 +25,8 @@ vi.mock('@/features/events/hooks', () => ({
   useEventsQuery: (...args: unknown[]) => mockUseEventsQuery(...args),
   useCreateEventMutation: () => ({ mutate: createMutate, isPending: false }),
   useDeleteEventMutation: () => ({ mutate: deleteMutate, isPending: false }),
+  useDeleteEventOccurrenceMutation: () => ({ mutate: deleteOccurrenceMutate, isPending: false }),
+  useUpdateEventOccurrenceMutation: () => ({ mutate: updateOccurrenceMutate, isPending: false }),
 }))
 
 const sampleEvent: Event = {
@@ -34,6 +38,7 @@ const sampleEvent: Event = {
   occurrenceDate: todayISO(),
   createdAt: `${todayISO()}T00:00:00Z`,
   category: null,
+  overridden: false,
 }
 
 beforeEach(() => {

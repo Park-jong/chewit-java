@@ -62,7 +62,7 @@ class CalendarServiceImplTest {
         when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(10L, 11L), monthStart, monthEnd))
                 .thenReturn(List.of(completion));
 
-        EventResponse event = new EventResponse(20L, "약속", null, target, null, target, null, null);
+        EventResponse event = new EventResponse(20L, "약속", null, target, null, target, null, null, false);
         when(eventService.listByMonth(USER_ID, month)).thenReturn(List.of(event));
 
         CalendarMonthResponse response = calendarService.getMonth(USER_ID, month);
@@ -83,6 +83,27 @@ class CalendarServiceImplTest {
 
         assertThat(day.events()).hasSize(1);
         assertThat(day.events().get(0).title()).isEqualTo("약속");
+    }
+
+    @Test
+    void getMonth_EventService가_반환한_회차를_날짜별로_그룹핑한다() {
+        // override(삭제/수정) 반영 자체는 EventServiceImplTest에서 검증한다.
+        YearMonth month = YearMonth.of(2026, 3);
+        LocalDate d2 = LocalDate.of(2026, 3, 2);
+        LocalDate d9 = LocalDate.of(2026, 3, 9);
+        LocalDate d16 = LocalDate.of(2026, 3, 16);
+        when(taskRepository.findByUser_IdAndDateBetween(USER_ID, month.atDay(1), month.atEndOfMonth())).thenReturn(List.of());
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        // 3/9 회차는 EventService가 이미 제외한 결과를 돌려준다고 가정
+        when(eventService.listByMonth(USER_ID, month)).thenReturn(List.of(
+                new EventResponse(20L, "회의", null, d2, null, d2, null, null, false),
+                new EventResponse(20L, "특별회의", null, d2, null, d16, null, null, true)));
+
+        CalendarMonthResponse response = calendarService.getMonth(USER_ID, month);
+
+        assertThat(response.days().stream().filter(d -> d.date().equals(d9)).findFirst().orElseThrow().events()).isEmpty();
+        assertThat(response.days().stream().filter(d -> d.date().equals(d16)).findFirst().orElseThrow().events())
+                .extracting(e -> e.title()).containsExactly("특별회의");
     }
 
     @Test

@@ -13,7 +13,13 @@ import com.chewworld.chewit.repository.EventRepository;
 import com.chewworld.chewit.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
+import com.chewworld.chewit.dto.EventDtos.UpdateOccurrenceRequest;
+import com.chewworld.chewit.entity.EventOccurrenceOverride;
+import com.chewworld.chewit.exception.InvalidRequestException;
+import com.chewworld.chewit.repository.EventOccurrenceOverrideRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -24,6 +30,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +43,9 @@ class EventServiceImplTest {
 
     @Mock
     private EventRepository eventRepository;
+
+    @Mock
+    private EventOccurrenceOverrideRepository overrideRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -209,5 +221,135 @@ class EventServiceImplTest {
 
         assertThatThrownBy(() -> eventService.delete(USER_ID, 1L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    private Event weekly() {
+        return Event.builder().id(1L).title("회의").memo("시리즈메모").date(LocalDate.of(2026, 8, 3))
+                .recurrence(RecurrenceType.WEEKLY).build();
+    }
+
+    @Test
+    void deleteOccurrence_유효한_회차면_skipped_override를_만든다() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+        when(overrideRepository.findByEvent_IdAndOccurrenceDate(1L, LocalDate.of(2026, 8, 10))).thenReturn(Optional.empty());
+
+        eventService.deleteOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 10));
+
+        ArgumentCaptor<EventOccurrenceOverride> captor = ArgumentCaptor.forClass(EventOccurrenceOverride.class);
+        verify(overrideRepository).save(captor.capture());
+        assertThat(captor.getValue().isSkipped()).isTrue();
+        assertThat(captor.getValue().getOccurrenceDate()).isEqualTo(LocalDate.of(2026, 8, 10));
+    }
+
+    @Test
+    void deleteOccurrence_회차가_아닌_날짜면_400예외() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+
+        assertThatThrownBy(() -> eventService.deleteOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 11)))
+                .isInstanceOf(InvalidRequestException.class);
+        verify(overrideRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteOccurrence_타인_이벤트면_404예외() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> eventService.deleteOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 10)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void deleteOccurrence_NONE_이벤트면_400예외() {
+        Event event = Event.builder().id(1L).title("생일").date(LocalDate.of(2026, 8, 3)).recurrence(RecurrenceType.NONE).build();
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> eventService.deleteOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 3)))
+                .isInstanceOf(InvalidRequestException.class);
+    }
+
+    @Test
+    void updateOccurrence_제목_override를_저장하고_메모는_시리즈값을_쓴다() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+        when(overrideRepository.findByEvent_IdAndOccurrenceDate(1L, LocalDate.of(2026, 8, 17))).thenReturn(Optional.empty());
+
+        EventResponse response = eventService.updateOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 17),
+                new UpdateOccurrenceRequest("이번만", null));
+
+        assertThat(response.title()).isEqualTo("이번만");
+        assertThat(response.memo()).isEqualTo("시리즈메모");
+        assertThat(response.overridden()).isTrue();
+        assertThat(response.occurrenceDate()).isEqualTo(LocalDate.of(2026, 8, 17));
+    }
+
+    @Test
+    void updateOccurrence_잘못된_날짜면_400예외() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+
+        assertThatThrownBy(() -> eventService.updateOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 4),
+                new UpdateOccurrenceRequest("x", null)))
+                .isInstanceOf(InvalidRequestException.class);
+    }
+
+    @Test
+    void listByMonth_skipped_회차는_제외하고_title_override를_반영한다() {
+        Event event = weekly();
+        when(eventRepository.findByUser_IdOrderByDateAsc(USER_ID)).thenReturn(List.of(event));
+        EventOccurrenceOverride skipped = EventOccurrenceOverride.builder().event(event)
+                .occurrenceDate(LocalDate.of(2026, 8, 10)).skipped(true).build();
+        EventOccurrenceOverride renamed = EventOccurrenceOverride.builder().event(event)
+                .occurrenceDate(LocalDate.of(2026, 8, 17)).title("특별회의").build();
+        when(overrideRepository.findByEvent_IdInAndOccurrenceDateBetween(
+                List.of(1L), LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31)))
+                .thenReturn(List.of(skipped, renamed));
+
+        List<EventResponse> responses = eventService.listByMonth(USER_ID, YearMonth.of(2026, 8));
+
+        assertThat(responses).extracting(EventResponse::occurrenceDate).containsExactly(
+                LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 17), LocalDate.of(2026, 8, 24), LocalDate.of(2026, 8, 31));
+        assertThat(responses.get(1).title()).isEqualTo("특별회의");
+        assertThat(responses.get(1).overridden()).isTrue();
+        assertThat(responses.get(0).overridden()).isFalse();
+    }
+
+    @Test
+    void delete_시리즈_삭제시_override를_먼저_정리한다() {
+        Event event = Event.builder().id(1L).build();
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
+
+        eventService.delete(USER_ID, 1L);
+
+        InOrder order = inOrder(overrideRepository, eventRepository);
+        order.verify(overrideRepository).deleteByEvent_Id(1L);
+        order.verify(eventRepository).delete(event);
+    }
+
+    @Test
+    void update_앵커가_바뀌면_override를_정리한다() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+
+        eventService.update(USER_ID, 1L,
+                new UpdateEventRequest("회의", null, LocalDate.of(2026, 8, 4), RecurrenceType.WEEKLY, null));
+
+        verify(overrideRepository).deleteByEvent_Id(1L);
+    }
+
+    @Test
+    void update_recurrence가_바뀌면_override를_정리한다() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+
+        eventService.update(USER_ID, 1L,
+                new UpdateEventRequest("회의", null, LocalDate.of(2026, 8, 3), RecurrenceType.MONTHLY, null));
+
+        verify(overrideRepository).deleteByEvent_Id(1L);
+    }
+
+    @Test
+    void update_앵커와_recurrence가_같으면_override를_유지한다() {
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(weekly()));
+
+        eventService.update(USER_ID, 1L,
+                new UpdateEventRequest("새제목", null, LocalDate.of(2026, 8, 3), RecurrenceType.WEEKLY, null));
+
+        verify(overrideRepository, never()).deleteByEvent_Id(any());
     }
 }

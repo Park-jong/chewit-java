@@ -4,6 +4,8 @@ import com.chewworld.chewit.dto.EventDtos.CreateEventRequest;
 import com.chewworld.chewit.dto.EventDtos.EventResponse;
 import com.chewworld.chewit.dto.EventDtos.UpdateEventRequest;
 import com.chewworld.chewit.entity.RecurrenceType;
+import com.chewworld.chewit.dto.EventDtos.UpdateOccurrenceRequest;
+import com.chewworld.chewit.exception.InvalidRequestException;
 import com.chewworld.chewit.exception.ResourceNotFoundException;
 import com.chewworld.chewit.service.EventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +24,7 @@ import java.util.List;
 import static com.chewworld.chewit.controller.support.ControllerTestSupport.authenticatedAs;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -46,7 +49,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     void list_월별로_이벤트를_조회한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 3, 5);
         when(eventService.listByMonth(1L, YearMonth.of(2026, 3))).thenReturn(List.of(
-                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null)));
+                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null, false)));
 
         mockMvc.perform(get("/api/events").param("month", "2026-03").with(authenticatedAs(1L)))
                 .andExpect(status().isOk())
@@ -72,7 +75,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
         LocalDate date = LocalDate.of(2026, 3, 5);
         CreateEventRequest request = new CreateEventRequest("생일", null, date, RecurrenceType.YEARLY, null);
         when(eventService.create(eq(1L), any())).thenReturn(
-                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null));
+                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null, false));
 
         mockMvc.perform(post("/api/events")
                         .with(authenticatedAs(1L))
@@ -98,7 +101,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
         LocalDate date = LocalDate.of(2026, 3, 6);
         UpdateEventRequest request = new UpdateEventRequest("생일2", null, date, RecurrenceType.NONE, null);
         when(eventService.update(eq(1L), eq(1L), any())).thenReturn(
-                new EventResponse(1L, "생일2", null, date, RecurrenceType.NONE, date, null, null));
+                new EventResponse(1L, "생일2", null, date, RecurrenceType.NONE, date, null, null, false));
 
         mockMvc.perform(patch("/api/events/{id}", 1L)
                         .with(authenticatedAs(1L))
@@ -125,5 +128,65 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     void delete_성공하면_200을_반환한다() throws Exception {
         mockMvc.perform(delete("/api/events/{id}", 1L).with(authenticatedAs(1L)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteOccurrence_성공하면_200을_반환한다() throws Exception {
+        mockMvc.perform(delete("/api/events/{id}/occurrences/{date}", 1L, "2026-08-10").with(authenticatedAs(1L)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteOccurrence_유효하지_않은_회차면_400을_반환한다() throws Exception {
+        doThrow(new InvalidRequestException("유효한 반복 회차가 아닙니다."))
+                .when(eventService).deleteOccurrence(1L, 1L, LocalDate.of(2026, 8, 11));
+
+        mockMvc.perform(delete("/api/events/{id}/occurrences/{date}", 1L, "2026-08-11").with(authenticatedAs(1L)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteOccurrence_없는_이벤트면_404를_반환한다() throws Exception {
+        doThrow(new ResourceNotFoundException("이벤트를 찾을 수 없습니다."))
+                .when(eventService).deleteOccurrence(1L, 9L, LocalDate.of(2026, 8, 10));
+
+        mockMvc.perform(delete("/api/events/{id}/occurrences/{date}", 9L, "2026-08-10").with(authenticatedAs(1L)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateOccurrence_성공하면_수정된_회차를_반환한다() throws Exception {
+        LocalDate date = LocalDate.of(2026, 8, 10);
+        when(eventService.updateOccurrence(eq(1L), eq(1L), eq(date), any())).thenReturn(
+                new EventResponse(1L, "이번만", null, LocalDate.of(2026, 8, 3), RecurrenceType.WEEKLY, date, null, null, true));
+
+        mockMvc.perform(patch("/api/events/{id}/occurrences/{date}", 1L, "2026-08-10")
+                        .with(authenticatedAs(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateOccurrenceRequest("이번만", null))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("이번만"))
+                .andExpect(jsonPath("$.overridden").value(true));
+    }
+
+    @Test
+    void updateOccurrence_제목이_공백이면_400을_반환한다() throws Exception {
+        mockMvc.perform(patch("/api/events/{id}/occurrences/{date}", 1L, "2026-08-10")
+                        .with(authenticatedAs(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateOccurrenceRequest(" ", null))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateOccurrence_없는_이벤트면_404를_반환한다() throws Exception {
+        when(eventService.updateOccurrence(eq(1L), eq(9L), any(), any()))
+                .thenThrow(new ResourceNotFoundException("이벤트를 찾을 수 없습니다."));
+
+        mockMvc.perform(patch("/api/events/{id}/occurrences/{date}", 9L, "2026-08-10")
+                        .with(authenticatedAs(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateOccurrenceRequest("x", null))))
+                .andExpect(status().isNotFound());
     }
 }
