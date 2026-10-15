@@ -19,6 +19,7 @@ import { CategoryBadge } from '@/features/categories/CategoryBadge'
 import { CategorySelect } from '@/features/categories/CategorySelect'
 import { AddChecklistItemForm } from '@/features/checklists/AddChecklistItemForm'
 import { ChecklistItemRow } from '@/features/checklists/ChecklistItemRow'
+import { reorderByDrag } from '@/features/checklists/reorder'
 import type { Checklist } from '@/features/checklists/types'
 import { getErrorMessage } from '@/lib/error'
 import { Button } from '@/components/ui/button'
@@ -143,18 +144,14 @@ export function ChecklistsPage() {
   function handleItemDrop(checklist: Checklist, targetItemId: number) {
     const sourceItemId = draggedItemId
     handleItemDragEnd()
-    if (sourceItemId === null || sourceItemId === targetItemId) return
+    if (sourceItemId === null) return
 
-    const items = checklist.items
-    const fromIndex = items.findIndex((item) => item.id === sourceItemId)
-    const toIndex = items.findIndex((item) => item.id === targetItemId)
-    if (fromIndex === -1 || toIndex === -1) return
+    // 같은 항목 드롭은 reorderByDrag가 null을 반환해 API 호출 없이 종료된다.
+    const itemIds = reorderByDrag(checklist.items, sourceItemId, targetItemId)
+    if (itemIds === null) return
 
-    const reordered = [...items]
-    const [moved] = reordered.splice(fromIndex, 1)
-    reordered.splice(toIndex, 0, moved)
     reorderItems.mutate(
-      { checklistId: checklist.id, request: { itemIds: reordered.map((item) => item.id) } },
+      { checklistId: checklist.id, request: { itemIds } },
       { onError: (error) => toast.error(getErrorMessage(error, '순서 변경에 실패했습니다.')) },
     )
   }
