@@ -237,7 +237,7 @@ export function DashboardPage() {
         ))}
         {incompleteCount > 0 && (
           <Button variant="outline" disabled={isMutating} onClick={handleCarryOver}>
-            미완료 {incompleteCount}개 다음 날로 이월
+            {activeFilter === null ? '' : '전체 '}미완료 {incompleteCount}개 다음 날로 이월
           </Button>
         )}
       </div>

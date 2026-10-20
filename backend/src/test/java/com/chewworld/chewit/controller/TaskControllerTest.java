@@ -187,6 +187,20 @@ class TaskControllerTest extends com.chewworld.chewit.controller.support.Control
     }
 
     @Test
+    void carryOver_과거_날짜면_400을_반환한다() throws Exception {
+        LocalDate from = LocalDate.of(2026, 9, 20);
+        LocalDate to = LocalDate.of(2026, 9, 19);
+        when(taskService.carryOver(eq(1L), any()))
+                .thenThrow(new InvalidRequestException("과거 날짜로는 이월할 수 없습니다."));
+
+        mockMvc.perform(post("/api/tasks/carry-over")
+                        .with(authenticatedAs(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CarryOverRequest(from, to))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void toggle_완료여부를_반전한다() throws Exception {
         when(taskService.toggleDone(1L, 1L)).thenReturn(
                 new TaskResponse(1L, "할일", null, LocalDate.now(), true, null, null));

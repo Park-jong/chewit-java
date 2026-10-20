@@ -1,11 +1,9 @@
-import { afterEach, describe, it, expect } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { NavBar } from './NavBar'
 
 describe('NavBar', () => {
-  afterEach(cleanup)
-
   it('카테고리 탭은 /categories 링크로 렌더링되고, 해당 경로에서는 활성 span이 된다', () => {
     const { unmount } = render(
       <MemoryRouter initialEntries={['/']}>

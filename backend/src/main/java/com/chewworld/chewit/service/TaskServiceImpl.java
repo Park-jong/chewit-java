@@ -73,6 +73,9 @@ public class TaskServiceImpl implements TaskService {
         if (request.fromDate().equals(request.toDate())) {
             throw new InvalidRequestException("이월할 날짜가 같은 날짜입니다.");
         }
+        if (request.toDate().isBefore(request.fromDate())) {
+            throw new InvalidRequestException("과거 날짜로는 이월할 수 없습니다.");
+        }
         List<Task> tasks = taskRepository.findByUser_IdAndDateAndDoneFalse(userId, request.fromDate());
         tasks.forEach(task -> task.setDate(request.toDate()));
         return new CarryOverResponse(tasks.size(), request.toDate());

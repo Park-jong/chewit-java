@@ -45,7 +45,7 @@ describe('tasks api', () => {
 
   it('updateTask는 PATCH /tasks/:id에 요청 바디를 전달한다', async () => {
     mockedApi.patch.mockResolvedValue({ data: sampleTask })
-    const request = { title: '수정됨', date: '2026-03-06' }
+    const request = { title: '수정됨', date: '2026-03-06', categoryId: null }
 
     await updateTask(1, request)
 

@@ -24,6 +24,7 @@ public class TaskDtos {
             @NotBlank String title,
             String memo,
             @NotNull LocalDate date,
+            // PATCH는 전체 교체: categoryId가 null이면 카테고리를 해제한다
             Long categoryId
     ) {
     }

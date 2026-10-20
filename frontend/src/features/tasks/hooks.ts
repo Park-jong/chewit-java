@@ -3,6 +3,9 @@ import { carryOverTasks, createTask, deleteTask, listTasks, toggleTask, updateTa
 import type { CarryOverRequest, CreateTaskRequest, UpdateTaskRequest } from './types'
 
 const TASKS_QUERY_KEY = ['tasks']
+// Task 변경은 캘린더·월간 통계에도 영향을 주므로 함께 무효화한다 (prefix 매칭으로 월별 키 전부 포함)
+const CALENDAR_QUERY_KEY = ['calendar']
+const STATS_QUERY_KEY = ['stats']
 
 export function useTasksQuery(date: string) {
   return useQuery({
@@ -13,7 +16,12 @@ export function useTasksQuery(date: string) {
 
 function useInvalidateTasks() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY })
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: CALENDAR_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: STATS_QUERY_KEY }),
+    ])
 }
 
 export function useCreateTaskMutation() {

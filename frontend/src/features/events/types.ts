@@ -41,5 +41,5 @@ export interface UpdateEventRequest {
   memo?: string
   date: string
   recurrence: RecurrenceType
-  categoryId?: number | null
+  categoryId: number | null
 }

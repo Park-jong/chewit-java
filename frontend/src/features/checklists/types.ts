@@ -22,7 +22,7 @@ export interface CreateChecklistRequest {
 
 export interface UpdateChecklistRequest {
   title: string
-  categoryId?: number | null
+  categoryId: number | null
 }
 
 export interface CreateChecklistItemRequest {

@@ -27,6 +27,7 @@ public class EventDtos {
             String memo,
             @NotNull LocalDate date,
             @NotNull RecurrenceType recurrence,
+            // PATCH는 전체 교체: categoryId가 null이면 카테고리를 해제한다
             Long categoryId
     ) {
     }

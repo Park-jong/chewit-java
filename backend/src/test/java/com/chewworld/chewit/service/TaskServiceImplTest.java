@@ -214,6 +214,16 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void carryOver_대상일이_시작일보다_과거면_예외() {
+        LocalDate from = LocalDate.of(2026, 9, 20);
+        LocalDate to = LocalDate.of(2026, 9, 19);
+
+        assertThatThrownBy(() -> taskService.carryOver(USER_ID, new CarryOverRequest(from, to)))
+                .isInstanceOf(InvalidRequestException.class);
+        verify(taskRepository, never()).findByUser_IdAndDateAndDoneFalse(anyLong(), any());
+    }
+
+    @Test
     void carryOver_요청한_유저의_할일만_조회한다() {
         LocalDate from = LocalDate.of(2026, 9, 20);
         LocalDate to = LocalDate.of(2026, 9, 21);

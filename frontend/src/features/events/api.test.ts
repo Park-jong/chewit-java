@@ -67,7 +67,7 @@ describe('events api', () => {
 
   it('updateEvent는 PATCH /events/:id에 요청 바디를 전달한다', async () => {
     mockedApi.patch.mockResolvedValue({ data: sampleEvent })
-    const request = { title: '생일2', date: '2026-03-06', recurrence: 'NONE' as const }
+    const request = { title: '생일2', date: '2026-03-06', recurrence: 'NONE' as const, categoryId: null }
 
     await updateEvent(1, request)
 

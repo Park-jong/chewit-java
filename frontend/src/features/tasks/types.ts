@@ -21,7 +21,7 @@ export interface UpdateTaskRequest {
   title: string
   memo?: string
   date: string
-  categoryId?: number | null
+  categoryId: number | null
 }
 
 export interface CarryOverRequest {

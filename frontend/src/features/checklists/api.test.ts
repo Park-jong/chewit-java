@@ -52,9 +52,9 @@ describe('checklists api', () => {
   it('renameChecklist는 PATCH /checklists/:id에 요청 바디를 전달한다', async () => {
     mockedApi.patch.mockResolvedValue({ data: sampleChecklist })
 
-    await renameChecklist(1, { title: '장보기2' })
+    await renameChecklist(1, { title: '장보기2', categoryId: null })
 
-    expect(mockedApi.patch).toHaveBeenCalledWith('/checklists/1', { title: '장보기2' })
+    expect(mockedApi.patch).toHaveBeenCalledWith('/checklists/1', { title: '장보기2', categoryId: null })
   })
 
   it('createChecklist와 renameChecklist는 categoryId를 요청 바디에 포함해 전달한다', async () => {
