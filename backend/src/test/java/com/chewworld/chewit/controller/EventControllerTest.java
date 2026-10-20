@@ -49,11 +49,13 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     void list_월별로_이벤트를_조회한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 3, 5);
         when(eventService.listByMonth(1L, YearMonth.of(2026, 3))).thenReturn(List.of(
-                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null, false)));
+                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null, false, "생일", "원본메모")));
 
         mockMvc.perform(get("/api/events").param("month", "2026-03").with(authenticatedAs(1L)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("생일"));
+                .andExpect(jsonPath("$[0].title").value("생일"))
+                .andExpect(jsonPath("$[0].seriesTitle").value("생일"))
+                .andExpect(jsonPath("$[0].seriesMemo").value("원본메모"));
     }
 
     @Test
@@ -75,7 +77,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
         LocalDate date = LocalDate.of(2026, 3, 5);
         CreateEventRequest request = new CreateEventRequest("생일", null, date, RecurrenceType.YEARLY, null);
         when(eventService.create(eq(1L), any())).thenReturn(
-                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null, false));
+                new EventResponse(1L, "생일", null, date, RecurrenceType.YEARLY, date, null, null, false, "생일", null));
 
         mockMvc.perform(post("/api/events")
                         .with(authenticatedAs(1L))
@@ -101,7 +103,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
         LocalDate date = LocalDate.of(2026, 3, 6);
         UpdateEventRequest request = new UpdateEventRequest("생일2", null, date, RecurrenceType.NONE, null);
         when(eventService.update(eq(1L), eq(1L), any())).thenReturn(
-                new EventResponse(1L, "생일2", null, date, RecurrenceType.NONE, date, null, null, false));
+                new EventResponse(1L, "생일2", null, date, RecurrenceType.NONE, date, null, null, false, "생일2", null));
 
         mockMvc.perform(patch("/api/events/{id}", 1L)
                         .with(authenticatedAs(1L))
@@ -158,7 +160,7 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
     void updateOccurrence_성공하면_수정된_회차를_반환한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 8, 10);
         when(eventService.updateOccurrence(eq(1L), eq(1L), eq(date), any())).thenReturn(
-                new EventResponse(1L, "이번만", null, LocalDate.of(2026, 8, 3), RecurrenceType.WEEKLY, date, null, null, true));
+                new EventResponse(1L, "이번만", null, LocalDate.of(2026, 8, 3), RecurrenceType.WEEKLY, date, null, null, true, "매주회의", "원본메모"));
 
         mockMvc.perform(patch("/api/events/{id}/occurrences/{date}", 1L, "2026-08-10")
                         .with(authenticatedAs(1L))
@@ -166,7 +168,9 @@ class EventControllerTest extends com.chewworld.chewit.controller.support.Contro
                         .content(objectMapper.writeValueAsString(new UpdateOccurrenceRequest("이번만", null))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("이번만"))
-                .andExpect(jsonPath("$.overridden").value(true));
+                .andExpect(jsonPath("$.overridden").value(true))
+                .andExpect(jsonPath("$.seriesTitle").value("매주회의"))
+                .andExpect(jsonPath("$.seriesMemo").value("원본메모"));
     }
 
     @Test

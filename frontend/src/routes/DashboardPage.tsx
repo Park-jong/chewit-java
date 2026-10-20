@@ -11,7 +11,7 @@ import {
   useToggleTaskMutation,
   useUpdateTaskMutation,
 } from '@/features/tasks/hooks'
-import type { Task } from '@/features/tasks/types'
+import type { Task, UpdateTaskRequest } from '@/features/tasks/types'
 import { TaskItem } from '@/features/tasks/TaskItem'
 import { AddTaskForm } from '@/features/tasks/AddTaskForm'
 import {
@@ -104,6 +104,13 @@ export function DashboardPage() {
         },
       },
       { onError: (error) => toast.error(getErrorMessage(error, '이월에 실패했습니다.')) },
+    )
+  }
+
+  function handleUpdate(id: number, request: UpdateTaskRequest) {
+    updateTask.mutate(
+      { id, request },
+      { onError: (error) => toast.error(getErrorMessage(error, '수정에 실패했습니다.')) },
     )
   }
 
@@ -232,6 +239,8 @@ export function DashboardPage() {
             onToggle={handleToggle}
             onDelete={handleDelete}
             onMoveToTomorrow={handleMoveToTomorrow}
+            onUpdate={handleUpdate}
+            categories={categories}
             disabled={isMutating}
           />
         ))}

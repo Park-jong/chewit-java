@@ -311,6 +311,66 @@ class EventServiceImplTest {
         assertThat(responses.get(0).overridden()).isFalse();
     }
 
+    private Event weeklyNamed() {
+        return Event.builder().id(1L).title("weekly").memo("원본 메모").date(LocalDate.of(2026, 8, 3))
+                .recurrence(RecurrenceType.WEEKLY).build();
+    }
+
+    @Test
+    void 회차_override가_있어도_응답에_시리즈_원본_제목과_메모가_담긴다() {
+        Event event = weeklyNamed();
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
+        when(overrideRepository.findByEvent_IdAndOccurrenceDate(1L, LocalDate.of(2026, 8, 17))).thenReturn(Optional.empty());
+
+        EventResponse updated = eventService.updateOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 17),
+                new UpdateOccurrenceRequest("weekly-occ", "occ-memo"));
+
+        assertThat(updated.title()).isEqualTo("weekly-occ");
+        assertThat(updated.memo()).isEqualTo("occ-memo");
+        assertThat(updated.seriesTitle()).isEqualTo("weekly");
+        assertThat(updated.seriesMemo()).isEqualTo("원본 메모");
+
+        EventOccurrenceOverride renamed = EventOccurrenceOverride.builder().event(event)
+                .occurrenceDate(LocalDate.of(2026, 8, 17)).title("weekly-occ").memo("occ-memo").build();
+        when(eventRepository.findByUser_IdOrderByDateAsc(USER_ID)).thenReturn(List.of(event));
+        when(overrideRepository.findByEvent_IdInAndOccurrenceDateBetween(
+                List.of(1L), LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31)))
+                .thenReturn(List.of(renamed));
+
+        List<EventResponse> responses = eventService.listByMonth(USER_ID, YearMonth.of(2026, 8));
+
+        EventResponse overridden = responses.stream()
+                .filter(r -> r.occurrenceDate().equals(LocalDate.of(2026, 8, 17))).findFirst().orElseThrow();
+        assertThat(overridden.title()).isEqualTo("weekly-occ");
+        assertThat(overridden.seriesTitle()).isEqualTo("weekly");
+        assertThat(overridden.seriesMemo()).isEqualTo("원본 메모");
+        responses.stream().filter(r -> !r.overridden()).forEach(r -> {
+            assertThat(r.seriesTitle()).isEqualTo(r.title());
+            assertThat(r.seriesMemo()).isEqualTo("원본 메모");
+        });
+    }
+
+    @Test
+    void 회차_응답의_시리즈_원본값으로_날짜만_바꿔_수정하면_시리즈_제목이_유지된다() {
+        Event event = weeklyNamed();
+        when(eventRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(event));
+        when(overrideRepository.findByEvent_IdAndOccurrenceDate(1L, LocalDate.of(2026, 8, 17))).thenReturn(Optional.empty());
+        EventResponse occurrence = eventService.updateOccurrence(USER_ID, 1L, LocalDate.of(2026, 8, 17),
+                new UpdateOccurrenceRequest("weekly-occ", "occ-memo"));
+
+        eventService.update(USER_ID, 1L, new UpdateEventRequest(
+                occurrence.seriesTitle(), occurrence.seriesMemo(), LocalDate.of(2026, 8, 4), RecurrenceType.WEEKLY, null));
+
+        when(eventRepository.findByUser_IdOrderByDateAsc(USER_ID)).thenReturn(List.of(event));
+        List<EventResponse> responses = eventService.listByMonth(USER_ID, YearMonth.of(2026, 8));
+
+        assertThat(responses).isNotEmpty();
+        assertThat(responses).allSatisfy(r -> {
+            assertThat(r.title()).isEqualTo("weekly");
+            assertThat(r.memo()).isEqualTo("원본 메모");
+        });
+    }
+
     @Test
     void delete_시리즈_삭제시_override를_먼저_정리한다() {
         Event event = Event.builder().id(1L).build();

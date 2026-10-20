@@ -30,6 +30,8 @@ const sampleEvent: Event = {
   createdAt: '2026-03-05T00:00:00Z',
   category: null,
   overridden: false,
+  seriesTitle: '생일',
+  seriesMemo: null,
 }
 
 describe('events api', () => {

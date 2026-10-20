@@ -41,7 +41,10 @@ public class EventDtos {
             LocalDate occurrenceDate,
             Instant createdAt,
             CategorySummary category,
-            boolean overridden
+            boolean overridden,
+            // title/memo는 회차 표시값(override 반영), seriesTitle/seriesMemo는 시리즈 원본
+            String seriesTitle,
+            String seriesMemo
     ) {
     }
 

@@ -27,6 +27,7 @@ vi.mock('@/features/events/hooks', () => ({
   useDeleteEventMutation: () => ({ mutate: deleteMutate, isPending: false }),
   useDeleteEventOccurrenceMutation: () => ({ mutate: deleteOccurrenceMutate, isPending: false }),
   useUpdateEventOccurrenceMutation: () => ({ mutate: updateOccurrenceMutate, isPending: false }),
+  useUpdateEventMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
 const sampleEvent: Event = {
@@ -39,6 +40,8 @@ const sampleEvent: Event = {
   createdAt: `${todayISO()}T00:00:00Z`,
   category: null,
   overridden: false,
+  seriesTitle: '오늘 이벤트',
+  seriesMemo: null,
 }
 
 beforeEach(() => {

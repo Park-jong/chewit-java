@@ -62,7 +62,7 @@ class CalendarServiceImplTest {
         when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(10L, 11L), monthStart, monthEnd))
                 .thenReturn(List.of(completion));
 
-        EventResponse event = new EventResponse(20L, "약속", null, target, null, target, null, null, false);
+        EventResponse event = new EventResponse(20L, "약속", null, target, null, target, null, null, false, "약속", null);
         when(eventService.listByMonth(USER_ID, month)).thenReturn(List.of(event));
 
         CalendarMonthResponse response = calendarService.getMonth(USER_ID, month);
@@ -96,8 +96,8 @@ class CalendarServiceImplTest {
         when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
         // 3/9 회차는 EventService가 이미 제외한 결과를 돌려준다고 가정
         when(eventService.listByMonth(USER_ID, month)).thenReturn(List.of(
-                new EventResponse(20L, "회의", null, d2, null, d2, null, null, false),
-                new EventResponse(20L, "특별회의", null, d2, null, d16, null, null, true)));
+                new EventResponse(20L, "회의", null, d2, null, d2, null, null, false, "회의", null),
+                new EventResponse(20L, "특별회의", null, d2, null, d16, null, null, true, "특별회의", null)));
 
         CalendarMonthResponse response = calendarService.getMonth(USER_ID, month);
 

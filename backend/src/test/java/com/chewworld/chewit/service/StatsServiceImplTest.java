@@ -125,7 +125,7 @@ class StatsServiceImplTest {
         when(taskRepository.findByUser_IdAndDateBetween(USER_ID, MONTH.atDay(1), MONTH.atEndOfMonth())).thenReturn(List.of());
         when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
         when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-        EventResponse occurrence = new EventResponse(1L, "회의", null, LocalDate.of(2026, 9, 1), RecurrenceType.WEEKLY, LocalDate.of(2026, 9, 1), null, null, false);
+        EventResponse occurrence = new EventResponse(1L, "회의", null, LocalDate.of(2026, 9, 1), RecurrenceType.WEEKLY, LocalDate.of(2026, 9, 1), null, null, false, "회의", null);
         when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of(occurrence, occurrence));
 
         MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
@@ -142,9 +142,9 @@ class StatsServiceImplTest {
         // 주간 반복 중 skipped 회차는 EventService가 이미 제외한 상태
         LocalDate d = LocalDate.of(2026, 9, 1);
         when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of(
-                new EventResponse(1L, "회의", null, d, RecurrenceType.WEEKLY, d, null, null, false),
-                new EventResponse(1L, "회의", null, d, RecurrenceType.WEEKLY, d.plusWeeks(2), null, null, false),
-                new EventResponse(1L, "특별", null, d, RecurrenceType.WEEKLY, d.plusWeeks(3), null, null, true)));
+                new EventResponse(1L, "회의", null, d, RecurrenceType.WEEKLY, d, null, null, false, "회의", null),
+                new EventResponse(1L, "회의", null, d, RecurrenceType.WEEKLY, d.plusWeeks(2), null, null, false, "회의", null),
+                new EventResponse(1L, "특별", null, d, RecurrenceType.WEEKLY, d.plusWeeks(3), null, null, true, "특별", null)));
 
         MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
 

@@ -198,7 +198,9 @@ public class EventServiceImpl implements EventService {
                 occurrenceDate,
                 event.getCreatedAt(),
                 CategorySummary.from(event.getCategory()),
-                override != null
+                override != null,
+                event.getTitle(),
+                event.getMemo()
         );
     }
 }

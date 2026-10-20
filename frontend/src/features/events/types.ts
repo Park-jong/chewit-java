@@ -21,6 +21,9 @@ export interface Event {
   createdAt: string
   category: CategorySummary | null
   overridden: boolean
+  // title/memo는 회차 표시값(override 반영), seriesTitle/seriesMemo는 시리즈 원본
+  seriesTitle: string
+  seriesMemo: string | null
 }
 
 export interface UpdateOccurrenceRequest {
