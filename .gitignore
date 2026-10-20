@@ -16,3 +16,6 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Agent work summaries
+agent-summaries/
