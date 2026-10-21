@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -27,14 +28,16 @@ import { useEventsQuery } from '@/features/events/hooks'
 import { useCategoriesQuery } from '@/features/categories/hooks'
 import { CategoryBadge } from '@/features/categories/CategoryBadge'
 import { RECURRENCE_LABELS } from '@/features/events/types'
-import { addDaysISO, formatDisplayDate, todayISO } from '@/lib/date'
+import { addDaysISO, formatDisplayDate, parseDateParam, todayISO } from '@/lib/date'
 import { getErrorMessage } from '@/lib/error'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export function DashboardPage() {
   const { user, logout } = useAuth()
-  const [date, setDate] = useState(todayISO())
+  // 검색 결과 등에서 ?date=YYYY-MM-DD로 진입하면 그 날짜로 시작하고, 잘못된 값이면 오늘로 폴백한다.
+  const [searchParams] = useSearchParams()
+  const [date, setDate] = useState(() => parseDateParam(searchParams.get('date')) ?? todayISO())
   const [categoryFilter, setCategoryFilter] = useState<number | null>(null)
 
   const tasksQuery = useTasksQuery(date)

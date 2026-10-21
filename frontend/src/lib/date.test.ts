@@ -8,6 +8,8 @@ import {
   todayYearMonth,
   addMonthsISO,
   formatDisplayMonth,
+  parseDateParam,
+  parseMonthParam,
 } from './date'
 
 afterEach(() => {
@@ -83,5 +85,17 @@ describe('formatDisplayDate/formatMonthDay', () => {
 describe('formatDisplayMonth', () => {
   it('년/월을 표시한다', () => {
     expect(formatDisplayMonth('2026-03')).toBe('2026년 3월')
+  })
+})
+
+describe('parseDateParam / parseMonthParam', () => {
+  it('유효한 날짜·월만 통과시키고 나머지는 null이다', () => {
+    expect(parseDateParam('2026-03-05')).toBe('2026-03-05')
+    expect(parseDateParam('2026-02-30')).toBeNull()
+    expect(parseDateParam('2026-3-5')).toBeNull()
+    expect(parseDateParam(null)).toBeNull()
+    expect(parseMonthParam('2026-03')).toBe('2026-03')
+    expect(parseMonthParam('2026-13')).toBeNull()
+    expect(parseMonthParam('abc')).toBeNull()
   })
 })

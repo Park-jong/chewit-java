@@ -110,4 +110,21 @@ describe('EventsPage', () => {
     expect(dots[0]).toHaveStyle({ backgroundColor: '#3B82F6' })
   })
 
+  it('?month 쿼리 파라미터로 해당 월을 초기 표시하고, 잘못된 값이면 이번 달로 폴백한다', () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/events?month=2025-03']}>
+        <EventsPage />
+      </MemoryRouter>,
+    )
+    expect(mockUseEventsQuery).toHaveBeenLastCalledWith('2025-03')
+    expect(screen.getByText('2025년 3월')).toBeInTheDocument()
+    unmount()
+
+    render(
+      <MemoryRouter initialEntries={['/events?month=2025-13']}>
+        <EventsPage />
+      </MemoryRouter>,
+    )
+    expect(mockUseEventsQuery).toHaveBeenLastCalledWith(todayISO().slice(0, 7))
+  })
 })

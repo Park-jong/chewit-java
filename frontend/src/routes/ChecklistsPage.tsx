@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -39,7 +40,12 @@ export function ChecklistsPage() {
   const deleteItem = useDeleteChecklistItemMutation()
   const reorderItems = useReorderChecklistItemsMutation()
 
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  // 검색 결과 등에서 ?open=<id>로 진입하면 해당 체크리스트를 펼친 상태로 시작한다.
+  const [searchParams] = useSearchParams()
+  const [expandedId, setExpandedId] = useState<number | null>(() => {
+    const openId = Number(searchParams.get('open'))
+    return Number.isInteger(openId) && openId > 0 ? openId : null
+  })
   const [title, setTitle] = useState<string | null>(null)
   const [draggedChecklistId, setDraggedChecklistId] = useState<number | null>(null)
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null)

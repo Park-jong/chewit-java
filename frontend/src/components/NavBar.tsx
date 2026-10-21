@@ -12,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/stats', label: '통계' },
   { to: '/calendar', label: '캘린더' },
   { to: '/categories', label: '카테고리' },
+  { to: '/search', label: '검색' },
 ]
 
 export function NavBar() {

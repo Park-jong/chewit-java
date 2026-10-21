@@ -8,6 +8,7 @@ import { ChecklistsPage } from '@/routes/ChecklistsPage'
 import { StatsPage } from '@/routes/StatsPage'
 import { CalendarPage } from '@/routes/CalendarPage'
 import { CategoriesPage } from '@/routes/CategoriesPage'
+import { SearchPage } from '@/routes/SearchPage'
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/search" element={<SearchPage />} />
       </Route>
     </Routes>
   )

@@ -53,6 +53,16 @@ afterEach(() => {
 })
 
 describe('ChecklistsPage', () => {
+  it('?open=<id>로 진입하면 해당 체크리스트가 펼쳐진 상태로 시작한다', () => {
+    render(
+      <MemoryRouter initialEntries={['/checklists?open=1']}>
+        <ChecklistsPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('항목 1')).toBeInTheDocument()
+  })
+
   it('체크리스트를 클릭하면 항목 목록이 인라인으로 펼쳐지고, 다시 클릭하면 접힌다', () => {
     render(
       <MemoryRouter initialEntries={['/checklists']}>

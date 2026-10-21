@@ -41,4 +41,14 @@ describe('NavBar', () => {
     const inactiveTab = screen.getByText('오늘')
     expect(inactiveTab.tagName).toBe('A')
   })
+
+  it('검색 탭은 /search 링크로 렌더링된다', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <NavBar />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('검색')).toHaveAttribute('href', '/search')
+  })
 })

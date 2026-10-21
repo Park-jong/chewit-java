@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -20,6 +21,7 @@ import {
   addMonthsISO,
   formatDisplayDate,
   formatDisplayMonth,
+  parseMonthParam,
   todayISO,
   todayYearMonth,
 } from '@/lib/date'
@@ -59,8 +61,12 @@ function groupEventsByDate(events: Event[] | undefined): Map<string, Event[]> {
 
 export function EventsPage() {
   const { user, logout } = useAuth()
-  const [month, setMonth] = useState(todayYearMonth())
-  const [selectedDate, setSelectedDate] = useState(todayISO())
+  // 검색 결과 등에서 ?month=YYYY-MM으로 진입하면 그 달로 시작하고, 잘못된 값이면 이번 달로 폴백한다.
+  const [searchParams] = useSearchParams()
+  const [month, setMonth] = useState(() => parseMonthParam(searchParams.get('month')) ?? todayYearMonth())
+  const [selectedDate, setSelectedDate] = useState(() =>
+    month === todayYearMonth() ? todayISO() : `${month}-01`,
+  )
 
   const eventsQuery = useEventsQuery(month)
   const categoriesQuery = useCategoriesQuery()

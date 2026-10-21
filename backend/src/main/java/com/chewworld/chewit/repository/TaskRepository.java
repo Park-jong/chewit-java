@@ -1,6 +1,7 @@
 package com.chewworld.chewit.repository;
 
 import com.chewworld.chewit.entity.Task;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,6 +21,18 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     @EntityGraph(attributePaths = "category")
     List<Task> findByUser_IdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+
+    // pattern은 SearchServiceImpl.toLikePattern 결과(소문자, '!' escape)
+    @EntityGraph(attributePaths = "category")
+    @Query("""
+            select t from Task t
+            where t.user.id = :userId
+              and (:categoryId is null or t.category.id = :categoryId)
+              and (lower(t.title) like :pattern escape '!' or lower(t.memo) like :pattern escape '!')
+            order by t.date desc, t.id desc
+            """)
+    List<Task> search(@Param("userId") Long userId, @Param("pattern") String pattern,
+                      @Param("categoryId") Long categoryId, Pageable pageable);
 
     Optional<Task> findByIdAndUser_Id(Long id, Long userId);
 
