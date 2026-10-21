@@ -85,4 +85,29 @@ describe('EventsPage', () => {
       expect.anything(),
     )
   })
+
+  it('월간 그리드의 이벤트에 카테고리 색 점을 표시하고 없으면 표시하지 않는다', () => {
+    const categorized: Event = {
+      ...sampleEvent,
+      id: 2,
+      title: '카테고리 이벤트',
+      category: { id: 5, name: '업무', color: '#3B82F6' },
+    }
+    mockUseEventsQuery.mockReturnValue({
+      data: [sampleEvent, categorized],
+      isPending: false,
+      isError: false,
+    })
+    render(
+      <MemoryRouter initialEntries={['/events']}>
+        <EventsPage />
+      </MemoryRouter>,
+    )
+
+    const dots = screen.getAllByRole('img')
+    expect(dots).toHaveLength(1)
+    expect(dots[0]).toHaveAttribute('aria-label', '업무')
+    expect(dots[0]).toHaveStyle({ backgroundColor: '#3B82F6' })
+  })
+
 })

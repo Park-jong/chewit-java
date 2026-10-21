@@ -1,7 +1,10 @@
+import type { CategorySummary } from '@/features/categories/types'
+
 export interface CalendarTaskItem {
   id: number
   title: string
   done: boolean
+  category: CategorySummary | null
 }
 
 export interface CalendarRoutineItem {
@@ -13,6 +16,7 @@ export interface CalendarRoutineItem {
 export interface CalendarEventItem {
   id: number
   title: string
+  category: CategorySummary | null
 }
 
 export interface CalendarDay {

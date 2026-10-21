@@ -5,6 +5,7 @@ import com.chewworld.chewit.dto.CalendarDtos.CalendarEventItem;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarMonthResponse;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarRoutineItem;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarTaskItem;
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.dto.EventDtos.EventResponse;
 import com.chewworld.chewit.entity.Routine;
 import com.chewworld.chewit.entity.RoutineCompletion;
@@ -55,7 +56,8 @@ public class CalendarServiceImpl implements CalendarService {
         List<CalendarDayResponse> days = monthStart.datesUntil(monthEnd.plusDays(1))
                 .map(date -> {
                     List<CalendarTaskItem> taskItems = tasksByDate.getOrDefault(date, List.of()).stream()
-                            .map(task -> new CalendarTaskItem(task.getId(), task.getTitle(), task.isDone()))
+                            .map(task -> new CalendarTaskItem(task.getId(), task.getTitle(), task.isDone(),
+                                    CategorySummary.from(task.getCategory())))
                             .toList();
 
                     DayOfWeek dayOfWeek = date.getDayOfWeek();
@@ -67,7 +69,7 @@ public class CalendarServiceImpl implements CalendarService {
                             .toList();
 
                     List<CalendarEventItem> eventItems = eventsByDate.getOrDefault(date, List.of()).stream()
-                            .map(event -> new CalendarEventItem(event.id(), event.title()))
+                            .map(event -> new CalendarEventItem(event.id(), event.title(), event.category()))
                             .toList();
 
                     return new CalendarDayResponse(date, taskItems, routineItems, eventItems);

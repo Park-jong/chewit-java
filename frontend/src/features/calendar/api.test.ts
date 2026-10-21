@@ -18,9 +18,9 @@ const sampleMonth: CalendarMonth = {
   days: [
     {
       date: '2026-03-05',
-      tasks: [{ id: 1, title: '장보기', done: false }],
+      tasks: [{ id: 1, title: '장보기', done: false, category: null }],
       routines: [{ id: 2, title: '운동', done: true }],
-      events: [{ id: 3, title: '생일' }],
+      events: [{ id: 3, title: '생일', category: null }],
     },
   ],
 }

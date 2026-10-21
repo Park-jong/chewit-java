@@ -18,6 +18,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByUser_IdAndDateAndDoneFalse(Long userId, LocalDate date);
 
+    @EntityGraph(attributePaths = "category")
     List<Task> findByUser_IdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 
     Optional<Task> findByIdAndUser_Id(Long id, Long userId);

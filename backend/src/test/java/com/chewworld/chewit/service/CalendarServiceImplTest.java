@@ -2,7 +2,9 @@ package com.chewworld.chewit.service;
 
 import com.chewworld.chewit.dto.CalendarDtos.CalendarDayResponse;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarMonthResponse;
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.dto.EventDtos.EventResponse;
+import com.chewworld.chewit.entity.Category;
 import com.chewworld.chewit.entity.Routine;
 import com.chewworld.chewit.entity.RoutineCompletion;
 import com.chewworld.chewit.entity.Task;
@@ -172,5 +174,32 @@ class CalendarServiceImplTest {
 
         assertThat(mondayResponse.routines()).hasSize(1);
         assertThat(mondayResponse.routines().get(0).done()).isFalse();
+    }
+
+    @Test
+    void getMonth_할일과_이벤트에_카테고리를_담고_없으면_null이다() {
+        YearMonth month = YearMonth.of(2026, 3);
+        LocalDate target = LocalDate.of(2026, 3, 2);
+        Category work = Category.builder().id(5L).name("업무").color("#3B82F6").build();
+        CategorySummary workSummary = new CategorySummary(5L, "업무", "#3B82F6");
+
+        Task categorized = Task.builder().id(1L).title("보고서").date(target).done(false).category(work).build();
+        Task plain = Task.builder().id(2L).title("장보기").date(target).done(false).build();
+        when(taskRepository.findByUser_IdAndDateBetween(USER_ID, month.atDay(1), month.atEndOfMonth()))
+                .thenReturn(List.of(categorized, plain));
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        when(eventService.listByMonth(USER_ID, month)).thenReturn(List.of(
+                new EventResponse(20L, "회의", null, target, null, target, null, workSummary, false, "회의", null),
+                new EventResponse(21L, "약속", null, target, null, target, null, null, false, "약속", null)));
+
+        CalendarDayResponse day = calendarService.getMonth(USER_ID, month).days().stream()
+                .filter(d -> d.date().equals(target))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(day.tasks()).extracting(t -> t.category())
+                .containsExactly(workSummary, null);
+        assertThat(day.events()).extracting(e -> e.category())
+                .containsExactly(workSummary, null);
     }
 }

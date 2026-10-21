@@ -1,5 +1,7 @@
 package com.chewworld.chewit.dto;
 
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -11,7 +13,8 @@ public class CalendarDtos {
     public record CalendarTaskItem(
             Long id,
             String title,
-            boolean done
+            boolean done,
+            CategorySummary category
     ) {
     }
 
@@ -24,7 +27,8 @@ public class CalendarDtos {
 
     public record CalendarEventItem(
             Long id,
-            String title
+            String title,
+            CategorySummary category
     ) {
     }
 

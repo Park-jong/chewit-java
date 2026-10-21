@@ -13,6 +13,7 @@ import {
 } from '@/features/events/hooks'
 import { EventItem } from '@/features/events/EventItem'
 import { AddEventForm } from '@/features/events/AddEventForm'
+import { CategoryDot } from '@/features/categories/CategoryDot'
 import { useCategoriesQuery } from '@/features/categories/hooks'
 import type { Event, RecurrenceType, UpdateEventRequest } from '@/features/events/types'
 import {
@@ -213,8 +214,9 @@ export function EventsPage() {
                 </span>
                 <div className="flex flex-col gap-0.5">
                   {visibleEvents.map((event) => (
-                    <span key={event.id} className="truncate text-xs">
-                      {event.title}
+                    <span key={event.id} className="flex items-center gap-1">
+                      <CategoryDot category={event.category} reserveSpace />
+                      <span className="truncate text-xs">{event.title}</span>
                     </span>
                   ))}
                   {remaining > 0 && (

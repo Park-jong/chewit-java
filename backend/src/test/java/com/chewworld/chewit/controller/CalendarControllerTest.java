@@ -5,6 +5,7 @@ import com.chewworld.chewit.dto.CalendarDtos.CalendarEventItem;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarMonthResponse;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarRoutineItem;
 import com.chewworld.chewit.dto.CalendarDtos.CalendarTaskItem;
+import com.chewworld.chewit.dto.CategoryDtos.CategorySummary;
 import com.chewworld.chewit.service.CalendarService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +38,9 @@ class CalendarControllerTest extends com.chewworld.chewit.controller.support.Con
     private static CalendarMonthResponse sampleResponse(String month) {
         CalendarDayResponse day = new CalendarDayResponse(
                 LocalDate.of(2026, 3, 2),
-                List.of(new CalendarTaskItem(1L, "할일", false)),
+                List.of(new CalendarTaskItem(1L, "할일", false, new CategorySummary(5L, "업무", "#3B82F6"))),
                 List.of(new CalendarRoutineItem(2L, "운동", true)),
-                List.of(new CalendarEventItem(3L, "약속"))
+                List.of(new CalendarEventItem(3L, "약속", null))
         );
         return new CalendarMonthResponse(month, List.of(day));
     }
@@ -53,7 +54,10 @@ class CalendarControllerTest extends com.chewworld.chewit.controller.support.Con
                 .andExpect(jsonPath("$.month").value("2026-03"))
                 .andExpect(jsonPath("$.days[0].tasks[0].title").value("할일"))
                 .andExpect(jsonPath("$.days[0].routines[0].done").value(true))
-                .andExpect(jsonPath("$.days[0].events[0].title").value("약속"));
+                .andExpect(jsonPath("$.days[0].tasks[0].category.name").value("업무"))
+                .andExpect(jsonPath("$.days[0].tasks[0].category.color").value("#3B82F6"))
+                .andExpect(jsonPath("$.days[0].events[0].title").value("약속"))
+                .andExpect(jsonPath("$.days[0].events[0].category").doesNotExist());
     }
 
     @Test

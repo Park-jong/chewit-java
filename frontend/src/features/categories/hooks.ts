@@ -10,6 +10,7 @@ const CATEGORY_DEPENDENT_QUERY_KEYS: string[][] = [
   ['tasks'],
   ['events'],
   ['checklists'],
+  ['calendar'],
 ]
 
 export function useCategoriesQuery() {

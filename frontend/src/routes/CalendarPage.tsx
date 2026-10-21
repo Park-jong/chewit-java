@@ -4,6 +4,8 @@ import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useCalendarQuery } from '@/features/calendar/hooks'
 import type { CalendarDay } from '@/features/calendar/types'
+import { CategoryDot } from '@/features/categories/CategoryDot'
+import type { CategorySummary } from '@/features/categories/types'
 import { addMonthsISO, formatDisplayMonth, todayISO, todayYearMonth } from '@/lib/date'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +19,7 @@ interface CalendarItem {
   key: string
   label: string
   muted: boolean
+  category: CategorySummary | null
 }
 
 function toCalendarItems(day: CalendarDay | undefined): CalendarItem[] {
@@ -24,13 +27,24 @@ function toCalendarItems(day: CalendarDay | undefined): CalendarItem[] {
     return []
   }
   return [
-    ...day.tasks.map((task) => ({ key: `task-${task.id}`, label: task.title, muted: task.done })),
+    ...day.tasks.map((task) => ({
+      key: `task-${task.id}`,
+      label: task.title,
+      muted: task.done,
+      category: task.category,
+    })),
     ...day.routines.map((routine) => ({
       key: `routine-${routine.id}`,
       label: routine.title,
       muted: routine.done,
+      category: null,
     })),
-    ...day.events.map((event) => ({ key: `event-${event.id}`, label: event.title, muted: false })),
+    ...day.events.map((event) => ({
+      key: `event-${event.id}`,
+      label: event.title,
+      muted: false,
+      category: event.category,
+    })),
   ]
 }
 
@@ -128,14 +142,16 @@ export function CalendarPage() {
                 </span>
                 <div className="flex flex-col gap-0.5">
                   {visibleItems.map((item) => (
-                    <span
-                      key={item.key}
-                      className={cn(
-                        'truncate text-xs',
-                        item.muted && 'text-muted-foreground line-through',
-                      )}
-                    >
-                      {item.label}
+                    <span key={item.key} className="flex items-center gap-1">
+                      <CategoryDot category={item.category} reserveSpace />
+                      <span
+                        className={cn(
+                          'truncate text-xs',
+                          item.muted && 'text-muted-foreground line-through',
+                        )}
+                      >
+                        {item.label}
+                      </span>
                     </span>
                   ))}
                   {remaining > 0 && (
