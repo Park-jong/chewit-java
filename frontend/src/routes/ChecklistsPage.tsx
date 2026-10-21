@@ -76,10 +76,17 @@ export function ChecklistsPage() {
     event.preventDefault()
     if (title === null) return
     const trimmed = title.trim()
-    if (!trimmed || trimmed === checklist.title) return
+    if (!trimmed) return
+    if (trimmed === checklist.title) {
+      setTitle(null)
+      return
+    }
     renameChecklist.mutate(
       { id: checklist.id, request: { title: trimmed, categoryId: checklist.category?.id ?? null } },
-      { onError: (error) => toast.error(getErrorMessage(error, '이름 변경에 실패했습니다.')) },
+      {
+        onSuccess: () => setTitle(null),
+        onError: (error) => toast.error(getErrorMessage(error, '이름 변경에 실패했습니다.')),
+      },
     )
   }
 
@@ -226,7 +233,9 @@ export function ChecklistsPage() {
                     <Input
                       value={title ?? checklist.title}
                       onChange={(event) => setTitle(event.target.value)}
-                      onBlur={() => setTitle(null)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') setTitle(null)
+                      }}
                       disabled={renameChecklist.isPending}
                     />
                     <Button type="submit" variant="outline" disabled={renameChecklist.isPending}>
