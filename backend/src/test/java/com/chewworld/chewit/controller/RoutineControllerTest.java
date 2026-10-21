@@ -45,11 +45,13 @@ class RoutineControllerTest extends com.chewworld.chewit.controller.support.Cont
     @Test
     void list_전체_루틴을_반환한다() throws Exception {
         when(routineService.listAll(1L)).thenReturn(List.of(
-                new RoutineResponse(1L, "운동", null, Set.of(DayOfWeek.MONDAY), true, false, null, 0.0)));
+                new RoutineResponse(1L, "운동", null, Set.of(DayOfWeek.MONDAY), true, false, null, 0.0, 0, 0)));
 
         mockMvc.perform(get("/api/routines").with(authenticatedAs(1L)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("운동"));
+                .andExpect(jsonPath("$[0].title").value("운동"))
+                .andExpect(jsonPath("$[0].currentStreak").value(0))
+                .andExpect(jsonPath("$[0].longestStreak").value(0));
     }
 
     @Test
@@ -73,7 +75,7 @@ class RoutineControllerTest extends com.chewworld.chewit.controller.support.Cont
     void create_성공하면_생성된_루틴을_반환한다() throws Exception {
         CreateRoutineRequest request = new CreateRoutineRequest("운동", null, Set.of(DayOfWeek.MONDAY));
         when(routineService.create(eq(1L), any())).thenReturn(
-                new RoutineResponse(1L, "운동", null, Set.of(DayOfWeek.MONDAY), true, false, null, 0.0));
+                new RoutineResponse(1L, "운동", null, Set.of(DayOfWeek.MONDAY), true, false, null, 0.0, 0, 0));
 
         mockMvc.perform(post("/api/routines")
                         .with(authenticatedAs(1L))
@@ -98,7 +100,7 @@ class RoutineControllerTest extends com.chewworld.chewit.controller.support.Cont
     void update_성공하면_수정된_루틴을_반환한다() throws Exception {
         UpdateRoutineRequest request = new UpdateRoutineRequest("운동2", null, Set.of(DayOfWeek.TUESDAY), false);
         when(routineService.update(eq(1L), eq(1L), any())).thenReturn(
-                new RoutineResponse(1L, "운동2", null, Set.of(DayOfWeek.TUESDAY), false, false, null, 0.0));
+                new RoutineResponse(1L, "운동2", null, Set.of(DayOfWeek.TUESDAY), false, false, null, 0.0, 0, 0));
 
         mockMvc.perform(patch("/api/routines/{id}", 1L)
                         .with(authenticatedAs(1L))
@@ -112,13 +114,15 @@ class RoutineControllerTest extends com.chewworld.chewit.controller.support.Cont
     void toggle_완료여부를_반전한다() throws Exception {
         LocalDate date = LocalDate.of(2026, 8, 17);
         when(routineService.toggleCompletion(1L, 1L, date)).thenReturn(
-                new RoutineResponse(1L, "운동", null, Set.of(DayOfWeek.MONDAY), true, true, null, 0.5));
+                new RoutineResponse(1L, "운동", null, Set.of(DayOfWeek.MONDAY), true, true, null, 0.5, 3, 5));
 
         mockMvc.perform(patch("/api/routines/{id}/toggle", 1L)
                         .param("date", "2026-08-17")
                         .with(authenticatedAs(1L)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.done").value(true));
+                .andExpect(jsonPath("$.done").value(true))
+                .andExpect(jsonPath("$.currentStreak").value(3))
+                .andExpect(jsonPath("$.longestStreak").value(5));
     }
 
     @Test

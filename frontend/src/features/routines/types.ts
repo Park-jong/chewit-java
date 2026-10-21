@@ -36,6 +36,8 @@ export interface Routine {
   done: boolean
   createdAt: string
   completionRate: number
+  currentStreak: number
+  longestStreak: number
 }
 
 export interface CreateRoutineRequest {

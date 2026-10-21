@@ -87,6 +87,26 @@ export function StatsPage() {
             />
           </div>
 
+          {stats.routineStreaks.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">루틴 연속 달성</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="flex flex-col gap-2">
+                  {stats.routineStreaks.map((streak) => (
+                    <li key={streak.routineId} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate">{streak.title}</span>
+                      <span className="shrink-0 text-muted-foreground">
+                        현재 {streak.currentStreak}일 · 최고 {streak.longestStreak}일
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">할일 완료 추이</CardTitle>

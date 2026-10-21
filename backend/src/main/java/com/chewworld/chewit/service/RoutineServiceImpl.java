@@ -9,6 +9,7 @@ import com.chewworld.chewit.exception.ResourceNotFoundException;
 import com.chewworld.chewit.repository.RoutineCompletionRepository;
 import com.chewworld.chewit.repository.RoutineRepository;
 import com.chewworld.chewit.repository.UserRepository;
+import com.chewworld.chewit.service.StreakCalculator.Streak;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,8 +38,10 @@ public class RoutineServiceImpl implements RoutineService {
     public List<RoutineResponse> listAll(Long userId) {
         List<Routine> routines = routineRepository.findByUser_IdOrderByCreatedAtAsc(userId);
         Map<Long, Double> completionRates = computeCompletionRates(routines);
+        Map<Long, Streak> streaks = computeStreaks(routines, LocalDate.now());
         return routines.stream()
-                .map(routine -> toResponse(routine, false, completionRates.getOrDefault(routine.getId(), 0.0)))
+                .map(routine -> toResponse(routine, false, completionRates.getOrDefault(routine.getId(), 0.0),
+                        streaks.getOrDefault(routine.getId(), Streak.NONE)))
                 .toList();
     }
 
@@ -56,10 +59,12 @@ public class RoutineServiceImpl implements RoutineService {
                 .map(completion -> completion.getRoutine().getId())
                 .collect(Collectors.toSet());
         Map<Long, Double> completionRates = computeCompletionRates(routines);
+        Map<Long, Streak> streaks = computeStreaks(routines, date);
 
         return routines.stream()
                 .map(routine -> toResponse(routine, doneRoutineIds.contains(routine.getId()),
-                        completionRates.getOrDefault(routine.getId(), 0.0)))
+                        completionRates.getOrDefault(routine.getId(), 0.0),
+                        streaks.getOrDefault(routine.getId(), Streak.NONE)))
                 .toList();
     }
 
@@ -73,7 +78,7 @@ public class RoutineServiceImpl implements RoutineService {
                 .daysOfWeek(new HashSet<>(request.daysOfWeek()))
                 .build();
         routineRepository.save(routine);
-        return toResponse(routine, false, computeCompletionRate(routine));
+        return toResponse(routine, false, computeCompletionRate(routine), computeStreak(routine, LocalDate.now()));
     }
 
     @Override
@@ -85,7 +90,7 @@ public class RoutineServiceImpl implements RoutineService {
         routine.getDaysOfWeek().clear();
         routine.getDaysOfWeek().addAll(request.daysOfWeek());
         routine.setActive(request.active());
-        return toResponse(routine, false, computeCompletionRate(routine));
+        return toResponse(routine, false, computeCompletionRate(routine), computeStreak(routine, LocalDate.now()));
     }
 
     @Override
@@ -102,7 +107,7 @@ public class RoutineServiceImpl implements RoutineService {
             routineCompletionRepository.save(RoutineCompletion.builder().routine(routine).date(date).build());
             nowDone = true;
         }
-        return toResponse(routine, nowDone, computeCompletionRate(routine));
+        return toResponse(routine, nowDone, computeCompletionRate(routine), computeStreak(routine, date));
     }
 
     @Override
@@ -116,6 +121,32 @@ public class RoutineServiceImpl implements RoutineService {
     private Routine getOwnedRoutine(Long userId, Long routineId) {
         return routineRepository.findByIdAndUser_Id(routineId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("루틴을 찾을 수 없습니다."));
+    }
+
+    private Streak computeStreak(Routine routine, LocalDate asOf) {
+        return computeStreaks(List.of(routine), asOf).getOrDefault(routine.getId(), Streak.NONE);
+    }
+
+    /** 루틴 수와 무관하게 완료 기록을 한 번의 범위 쿼리로 조회한 뒤 메모리에서 루틴별로 계산한다. */
+    private Map<Long, Streak> computeStreaks(List<Routine> routines, LocalDate asOf) {
+        if (routines.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> routineIds = routines.stream().map(Routine::getId).toList();
+        LocalDate from = asOf.minusDays(StreakCalculator.MAX_LOOKBACK_DAYS);
+        Map<Long, Set<LocalDate>> datesByRoutineId = routineCompletionRepository
+                .findByRoutine_IdInAndDateBetween(routineIds, from, asOf).stream()
+                .collect(Collectors.groupingBy(completion -> completion.getRoutine().getId(),
+                        Collectors.mapping(RoutineCompletion::getDate, Collectors.toSet())));
+
+        Map<Long, Streak> streaks = new HashMap<>();
+        for (Routine routine : routines) {
+            LocalDate createdDate = routine.getCreatedAt() == null ? null
+                    : LocalDate.ofInstant(routine.getCreatedAt(), ZoneId.systemDefault());
+            streaks.put(routine.getId(), StreakCalculator.compute(routine.getDaysOfWeek(),
+                    datesByRoutineId.getOrDefault(routine.getId(), Set.of()), createdDate, asOf));
+        }
+        return streaks;
     }
 
     private double computeCompletionRate(Routine routine) {
@@ -171,7 +202,7 @@ public class RoutineServiceImpl implements RoutineService {
         return Math.round((double) completed / scheduled * 10000) / 10000.0;
     }
 
-    private RoutineResponse toResponse(Routine routine, boolean done, double completionRate) {
+    private RoutineResponse toResponse(Routine routine, boolean done, double completionRate, Streak streak) {
         return new RoutineResponse(
                 routine.getId(),
                 routine.getTitle(),
@@ -180,7 +211,9 @@ public class RoutineServiceImpl implements RoutineService {
                 routine.isActive(),
                 done,
                 routine.getCreatedAt(),
-                completionRate
+                completionRate,
+                streak.current(),
+                streak.longest()
         );
     }
 }

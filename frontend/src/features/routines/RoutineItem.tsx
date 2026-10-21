@@ -32,6 +32,11 @@ export function RoutineItem({ routine, onToggle, onDelete, disabled }: RoutineIt
             {routine.title}
           </p>
           <Badge variant="secondary">{Math.round(routine.completionRate * 100)}%</Badge>
+          {routine.currentStreak >= 2 && (
+            <Badge variant="outline" aria-label={`${routine.currentStreak}일 연속 달성`}>
+              {routine.currentStreak}일 연속
+            </Badge>
+          )}
         </div>
         <p className="truncate text-sm text-muted-foreground">
           {formatDays(routine)}

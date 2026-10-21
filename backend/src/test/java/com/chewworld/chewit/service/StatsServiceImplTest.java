@@ -2,6 +2,7 @@ package com.chewworld.chewit.service;
 
 import com.chewworld.chewit.dto.EventDtos.EventResponse;
 import com.chewworld.chewit.dto.StatsDtos.MonthlyStatsResponse;
+import com.chewworld.chewit.dto.StatsDtos.RoutineStreak;
 import com.chewworld.chewit.entity.Checklist;
 import com.chewworld.chewit.entity.ChecklistItem;
 import com.chewworld.chewit.entity.RecurrenceType;
@@ -21,10 +22,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +80,8 @@ class StatsServiceImplTest {
         LocalDate firstMonday = LocalDate.of(2026, 9, 7);
         when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(10L), MONTH.atDay(1), MONTH.atEndOfMonth()))
                 .thenReturn(List.of(RoutineCompletion.builder().routine(mondayRoutine).date(firstMonday).build()));
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(
+                List.of(10L), MONTH.atEndOfMonth().minusDays(365), MONTH.atEndOfMonth())).thenReturn(List.of());
         when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
         when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of());
 
@@ -161,5 +166,99 @@ class StatsServiceImplTest {
         MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
 
         assertThat(response.month()).isEqualTo("2026-09");
+    }
+
+    private void stubEmptyExceptRoutines(List<Routine> routines) {
+        when(taskRepository.findByUser_IdAndDateBetween(USER_ID, MONTH.atDay(1), MONTH.atEndOfMonth())).thenReturn(List.of());
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(routines);
+        when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        when(eventService.listByMonth(USER_ID, MONTH)).thenReturn(List.of());
+    }
+
+    @Test
+    void monthly_routineStreaks_과거_월은_말일_기준으로_현재_연속_내림차순_최대_5개를_반환한다() {
+        LocalDate monthEnd = MONTH.atEndOfMonth(); // 2026-09-30
+        List<Routine> routines = new ArrayList<>();
+        List<RoutineCompletion> completions = new ArrayList<>();
+        // 루틴 1..6: 매일 루틴, 말일 직전까지 id 만큼 연속 완료 (루틴 7은 기록 없음)
+        for (long id = 1; id <= 7; id++) {
+            Routine routine = Routine.builder().id(id).title("루틴" + id).active(true)
+                    .daysOfWeek(Set.of(DayOfWeek.values())).build();
+            routines.add(routine);
+            if (id <= 6) {
+                for (int i = 0; i < id; i++) {
+                    completions.add(RoutineCompletion.builder().routine(routine).date(monthEnd.minusDays(i)).build());
+                }
+            }
+        }
+        stubEmptyExceptRoutines(routines);
+        List<Long> ids = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L);
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(ids, MONTH.atDay(1), monthEnd))
+                .thenReturn(List.of());
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(ids, monthEnd.minusDays(365), monthEnd))
+                .thenReturn(completions);
+
+        MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
+
+        assertThat(response.routineStreaks()).extracting(RoutineStreak::routineId)
+                .containsExactly(6L, 5L, 4L, 3L, 2L);
+        assertThat(response.routineStreaks().get(0)).isEqualTo(new RoutineStreak(6L, "루틴6", 6, 6));
+    }
+
+    @Test
+    void monthly_routineStreaks_비활성_루틴과_연속이_전혀_없는_루틴은_제외한다() {
+        LocalDate monthEnd = MONTH.atEndOfMonth();
+        Routine inactive = Routine.builder().id(1L).title("비활성").active(false)
+                .daysOfWeek(Set.of(DayOfWeek.values())).build();
+        Routine none = Routine.builder().id(2L).title("기록없음").active(true)
+                .daysOfWeek(Set.of(DayOfWeek.values())).build();
+        stubEmptyExceptRoutines(List.of(inactive, none));
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(2L), MONTH.atDay(1), monthEnd))
+                .thenReturn(List.of());
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(2L), monthEnd.minusDays(365), monthEnd))
+                .thenReturn(List.of());
+
+        MonthlyStatsResponse response = statsService.monthly(USER_ID, MONTH);
+
+        assertThat(response.routineStreaks()).isEmpty();
+    }
+
+    @Test
+    void monthly_routineStreaks_미래_월이면_빈_목록이다() {
+        YearMonth future = YearMonth.now().plusMonths(2);
+        Routine routine = Routine.builder().id(1L).title("운동").active(true)
+                .daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(taskRepository.findByUser_IdAndDateBetween(USER_ID, future.atDay(1), future.atEndOfMonth())).thenReturn(List.of());
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of(routine));
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(
+                List.of(1L), future.atDay(1), future.atEndOfMonth())).thenReturn(List.of());
+        when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        when(eventService.listByMonth(USER_ID, future)).thenReturn(List.of());
+
+        MonthlyStatsResponse response = statsService.monthly(USER_ID, future);
+
+        assertThat(response.routineStreaks()).isEmpty();
+    }
+
+    @Test
+    void monthly_routineStreaks_이번_달은_오늘까지를_기준으로_센다() {
+        YearMonth thisMonth = YearMonth.now();
+        LocalDate today = LocalDate.now();
+        Routine routine = Routine.builder().id(1L).title("운동").active(true)
+                .daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(taskRepository.findByUser_IdAndDateBetween(USER_ID, thisMonth.atDay(1), thisMonth.atEndOfMonth())).thenReturn(List.of());
+        when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of(routine));
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(
+                List.of(1L), thisMonth.atDay(1), thisMonth.atEndOfMonth())).thenReturn(List.of());
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), today.minusDays(365), today))
+                .thenReturn(List.of(
+                        RoutineCompletion.builder().routine(routine).date(today).build(),
+                        RoutineCompletion.builder().routine(routine).date(today.minusDays(1)).build()));
+        when(checklistRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+        when(eventService.listByMonth(USER_ID, thisMonth)).thenReturn(List.of());
+
+        MonthlyStatsResponse response = statsService.monthly(USER_ID, thisMonth);
+
+        assertThat(response.routineStreaks()).containsExactly(new RoutineStreak(1L, "운동", 2, 2));
     }
 }

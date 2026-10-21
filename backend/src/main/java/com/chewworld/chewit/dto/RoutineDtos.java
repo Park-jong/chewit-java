@@ -35,7 +35,9 @@ public class RoutineDtos {
             boolean active,
             boolean done,
             Instant createdAt,
-            double completionRate
+            double completionRate,
+            int currentStreak,
+            int longestStreak
     ) {
     }
 }

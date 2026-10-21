@@ -23,12 +23,16 @@ public class StatsDtos {
     public record EventStats(int occurrences) {
     }
 
+    public record RoutineStreak(Long routineId, String title, int currentStreak, int longestStreak) {
+    }
+
     public record MonthlyStatsResponse(
             String month,
             TaskStats taskStats,
             RoutineStats routineStats,
             ChecklistStats checklistStats,
-            EventStats eventStats
+            EventStats eventStats,
+            List<RoutineStreak> routineStreaks
     ) {
     }
 }

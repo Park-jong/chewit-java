@@ -25,9 +25,12 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -81,6 +84,8 @@ class RoutineServiceImplTest {
                 .toList();
         when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), weekStart, today))
                 .thenReturn(completions);
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), today.minusDays(365), today))
+                .thenReturn(List.of());
 
         List<RoutineResponse> responses = routineService.listAll(USER_ID);
 
@@ -95,6 +100,8 @@ class RoutineServiceImplTest {
         Routine routine = Routine.builder().id(1L).title("운동").daysOfWeek(Set.of(DayOfWeek.values())).build();
         when(routineRepository.findByUser_IdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of(routine));
         when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), weekStart, today))
+                .thenReturn(List.of());
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), today.minusDays(365), today))
                 .thenReturn(List.of());
 
         List<RoutineResponse> responses = routineService.listAll(USER_ID);
@@ -132,6 +139,75 @@ class RoutineServiceImplTest {
         assertThat(responses.get(0).done()).isTrue();
         assertThat(responses.get(1).id()).isEqualTo(2L);
         assertThat(responses.get(1).done()).isFalse();
+    }
+
+    /** 완료율 계산용 이번 주 범위 조회는 이 테스트들의 관심사가 아니므로 빈 결과로 허용한다. */
+    private void allowWeekWindowQuery() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        lenient().when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(anyList(), eq(weekStart), eq(today)))
+                .thenReturn(List.of());
+    }
+
+    @Test
+    void listByDate_연속_달성_값을_응답에_반영한다() {
+        allowWeekWindowQuery();
+        LocalDate date = LocalDate.of(2026, 10, 21); // 수요일
+        Routine routine = Routine.builder().id(1L).title("운동").daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(routineRepository.findActiveByUserIdAndDayOfWeek(USER_ID, DayOfWeek.WEDNESDAY)).thenReturn(List.of(routine));
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), date.minusDays(365), date))
+                .thenReturn(List.of(
+                        RoutineCompletion.builder().routine(routine).date(date.minusDays(1)).build(),
+                        RoutineCompletion.builder().routine(routine).date(date.minusDays(2)).build(),
+                        RoutineCompletion.builder().routine(routine).date(date.minusDays(3)).build(),
+                        RoutineCompletion.builder().routine(routine).date(date.minusDays(10)).build(),
+                        RoutineCompletion.builder().routine(routine).date(date.minusDays(11)).build()));
+
+        List<RoutineResponse> responses = routineService.listByDate(USER_ID, date);
+
+        // 오늘은 아직 미완료이므로 끊기지 않고 어제부터 3일 연속
+        assertThat(responses.get(0).done()).isFalse();
+        assertThat(responses.get(0).currentStreak()).isEqualTo(3);
+        assertThat(responses.get(0).longestStreak()).isEqualTo(3);
+    }
+
+    @Test
+    void listByDate_완료_기록_조회는_루틴_수와_무관하게_한번의_범위_쿼리로_한다() {
+        allowWeekWindowQuery();
+        LocalDate date = LocalDate.of(2026, 10, 21);
+        Routine routine1 = Routine.builder().id(1L).title("운동").daysOfWeek(Set.of(DayOfWeek.values())).build();
+        Routine routine2 = Routine.builder().id(2L).title("독서").daysOfWeek(Set.of(DayOfWeek.values())).build();
+        Routine routine3 = Routine.builder().id(3L).title("명상").daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(routineRepository.findActiveByUserIdAndDayOfWeek(USER_ID, DayOfWeek.WEDNESDAY))
+                .thenReturn(List.of(routine1, routine2, routine3));
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L, 2L, 3L), date.minusDays(365), date))
+                .thenReturn(List.of(
+                        RoutineCompletion.builder().routine(routine2).date(date).build(),
+                        RoutineCompletion.builder().routine(routine2).date(date.minusDays(1)).build()));
+
+        List<RoutineResponse> responses = routineService.listByDate(USER_ID, date);
+
+        assertThat(responses).extracting(RoutineResponse::currentStreak).containsExactly(0, 2, 0);
+        verify(routineCompletionRepository, times(2)).findByRoutine_IdInAndDateBetween(anyList(), any(), any());
+        verify(routineCompletionRepository, times(1))
+                .findByRoutine_IdInAndDateBetween(List.of(1L, 2L, 3L), date.minusDays(365), date);
+        verify(routineCompletionRepository, never()).findByRoutine_IdAndDate(any(), any());
+    }
+
+    @Test
+    void toggleCompletion_토글한_날짜_기준으로_연속_달성을_계산한다() {
+        allowWeekWindowQuery();
+        LocalDate date = LocalDate.of(2026, 10, 21);
+        Routine routine = Routine.builder().id(1L).daysOfWeek(Set.of(DayOfWeek.values())).build();
+        when(routineRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(routine));
+        when(routineCompletionRepository.findByRoutine_IdAndDate(1L, date)).thenReturn(Optional.empty());
+        when(routineCompletionRepository.findByRoutine_IdInAndDateBetween(List.of(1L), date.minusDays(365), date))
+                .thenReturn(List.of(RoutineCompletion.builder().routine(routine).date(date.minusDays(1)).build()));
+
+        RoutineResponse response = routineService.toggleCompletion(USER_ID, 1L, date);
+
+        assertThat(response.done()).isTrue();
+        assertThat(response.currentStreak()).isEqualTo(1);
     }
 
     @Test

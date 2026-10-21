@@ -4,6 +4,7 @@ import com.chewworld.chewit.dto.StatsDtos.ChecklistStats;
 import com.chewworld.chewit.dto.StatsDtos.EventStats;
 import com.chewworld.chewit.dto.StatsDtos.MonthlyStatsResponse;
 import com.chewworld.chewit.dto.StatsDtos.RoutineStats;
+import com.chewworld.chewit.dto.StatsDtos.RoutineStreak;
 import com.chewworld.chewit.dto.StatsDtos.TaskStats;
 import com.chewworld.chewit.service.StatsService;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,8 @@ class StatsControllerTest extends com.chewworld.chewit.controller.support.Contro
                 new TaskStats(10, 7, 0.7, List.of()),
                 new RoutineStats(20, 15, 0.75, List.of()),
                 new ChecklistStats(3, 12, 8, 8.0 / 12),
-                new EventStats(2)
+                new EventStats(2),
+                List.of(new RoutineStreak(7L, "운동", 4, 9))
         );
     }
 
@@ -53,7 +55,11 @@ class StatsControllerTest extends com.chewworld.chewit.controller.support.Contro
                 .andExpect(jsonPath("$.taskStats.total").value(10))
                 .andExpect(jsonPath("$.routineStats.expected").value(20))
                 .andExpect(jsonPath("$.checklistStats.totalChecklists").value(3))
-                .andExpect(jsonPath("$.eventStats.occurrences").value(2));
+                .andExpect(jsonPath("$.eventStats.occurrences").value(2))
+                .andExpect(jsonPath("$.routineStreaks[0].routineId").value(7))
+                .andExpect(jsonPath("$.routineStreaks[0].title").value("운동"))
+                .andExpect(jsonPath("$.routineStreaks[0].currentStreak").value(4))
+                .andExpect(jsonPath("$.routineStreaks[0].longestStreak").value(9));
     }
 
     @Test

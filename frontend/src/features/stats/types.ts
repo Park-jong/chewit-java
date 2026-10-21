@@ -29,10 +29,18 @@ export interface EventStats {
   occurrences: number
 }
 
+export interface RoutineStreak {
+  routineId: number
+  title: string
+  currentStreak: number
+  longestStreak: number
+}
+
 export interface MonthlyStats {
   month: string
   taskStats: TaskStats
   routineStats: RoutineStats
   checklistStats: ChecklistStats
   eventStats: EventStats
+  routineStreaks: RoutineStreak[]
 }

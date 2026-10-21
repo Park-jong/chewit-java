@@ -22,6 +22,8 @@ const sampleRoutine: Routine = {
   done: false,
   createdAt: '2026-03-05T00:00:00Z',
   completionRate: 0.5,
+  currentStreak: 3,
+  longestStreak: 7,
 }
 
 describe('routines api', () => {

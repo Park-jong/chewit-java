@@ -5,6 +5,7 @@ import com.chewworld.chewit.dto.StatsDtos.DailyCount;
 import com.chewworld.chewit.dto.StatsDtos.EventStats;
 import com.chewworld.chewit.dto.StatsDtos.MonthlyStatsResponse;
 import com.chewworld.chewit.dto.StatsDtos.RoutineStats;
+import com.chewworld.chewit.dto.StatsDtos.RoutineStreak;
 import com.chewworld.chewit.dto.StatsDtos.TaskStats;
 import com.chewworld.chewit.entity.Checklist;
 import com.chewworld.chewit.entity.ChecklistItem;
@@ -15,6 +16,7 @@ import com.chewworld.chewit.repository.ChecklistRepository;
 import com.chewworld.chewit.repository.RoutineCompletionRepository;
 import com.chewworld.chewit.repository.RoutineRepository;
 import com.chewworld.chewit.repository.TaskRepository;
+import com.chewworld.chewit.service.StreakCalculator.Streak;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +52,8 @@ public class StatsServiceImpl implements StatsService {
                 taskStats(userId, monthStart, monthEnd),
                 routineStats(userId, monthStart, monthEnd),
                 checklistStats(userId),
-                eventStats(userId, month)
+                eventStats(userId, month),
+                routineStreaks(userId, month)
         );
     }
 
@@ -104,6 +109,43 @@ public class StatsServiceImpl implements StatsService {
         int expectedTotal = daily.stream().mapToInt(DailyCount::total).sum();
         int completedTotal = daily.stream().mapToInt(DailyCount::completed).sum();
         return new RoutineStats(expectedTotal, completedTotal, completionRate(completedTotal, expectedTotal), daily);
+    }
+
+    private List<RoutineStreak> routineStreaks(Long userId, YearMonth month) {
+        LocalDate today = LocalDate.now();
+        if (month.atDay(1).isAfter(today)) {
+            return List.of();
+        }
+        LocalDate monthEnd = month.atEndOfMonth();
+        LocalDate asOf = monthEnd.isBefore(today) ? monthEnd : today;
+
+        List<Routine> activeRoutines = routineRepository.findByUser_IdOrderByCreatedAtAsc(userId).stream()
+                .filter(Routine::isActive)
+                .toList();
+        if (activeRoutines.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> routineIds = activeRoutines.stream().map(Routine::getId).toList();
+        LocalDate from = asOf.minusDays(StreakCalculator.MAX_LOOKBACK_DAYS);
+        Map<Long, Set<LocalDate>> datesByRoutineId = routineCompletionRepository
+                .findByRoutine_IdInAndDateBetween(routineIds, from, asOf).stream()
+                .collect(Collectors.groupingBy(completion -> completion.getRoutine().getId(),
+                        Collectors.mapping(RoutineCompletion::getDate, Collectors.toSet())));
+
+        // 정렬은 안정 정렬이라 동률이면 생성 순서가 유지된다.
+        return activeRoutines.stream()
+                .map(routine -> {
+                    LocalDate createdDate = routine.getCreatedAt() == null ? null
+                            : LocalDate.ofInstant(routine.getCreatedAt(), ZoneId.systemDefault());
+                    Streak streak = StreakCalculator.compute(routine.getDaysOfWeek(),
+                            datesByRoutineId.getOrDefault(routine.getId(), Set.of()), createdDate, asOf);
+                    return new RoutineStreak(routine.getId(), routine.getTitle(), streak.current(), streak.longest());
+                })
+                .filter(streak -> streak.currentStreak() > 0 || streak.longestStreak() > 0)
+                .sorted(Comparator.comparingInt(RoutineStreak::currentStreak).reversed())
+                .limit(5)
+                .toList();
     }
 
     private ChecklistStats checklistStats(Long userId) {

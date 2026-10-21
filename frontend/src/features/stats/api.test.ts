@@ -19,6 +19,7 @@ const sampleStats: MonthlyStats = {
   routineStats: { expected: 20, completed: 15, completionRate: 0.75, daily: [] },
   checklistStats: { totalChecklists: 3, totalItems: 12, completedItems: 8, completionRate: 8 / 12 },
   eventStats: { occurrences: 2 },
+  routineStreaks: [{ routineId: 1, title: '운동', currentStreak: 4, longestStreak: 9 }],
 }
 
 describe('stats api', () => {
