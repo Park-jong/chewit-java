@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { ReminderControl } from '@/features/reminders/ReminderControl'
 import { ThemeToggle } from '@/features/theme/ThemeToggle'
 
 interface NavItem {
@@ -56,6 +57,7 @@ export function NavBar() {
         })}
       </div>
       <div className="flex shrink-0 items-center pb-1">
+        <ReminderControl />
         <ThemeToggle />
       </div>
     </nav>

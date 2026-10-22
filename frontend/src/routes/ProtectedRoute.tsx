@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
+import { ReminderProvider } from '@/features/reminders/ReminderProvider'
 import { useAuth } from '@/features/auth/AuthContext'
 
 export function ProtectedRoute() {
@@ -12,7 +13,11 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
 
-  return <Outlet />
+  return (
+    <ReminderProvider>
+      <Outlet />
+    </ReminderProvider>
+  )
 }
 
 export function PublicOnlyRoute() {

@@ -7,10 +7,11 @@ const TASKS_QUERY_KEY = ['tasks']
 const CALENDAR_QUERY_KEY = ['calendar']
 const STATS_QUERY_KEY = ['stats']
 
-export function useTasksQuery(date: string) {
+export function useTasksQuery(date: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...TASKS_QUERY_KEY, date],
     queryFn: () => listTasks(date),
+    enabled: options?.enabled ?? true,
   })
 }
 
