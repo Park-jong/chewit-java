@@ -10,6 +10,7 @@ import {
   formatDisplayMonth,
   parseDateParam,
   parseMonthParam,
+  normalizeTime,
 } from './date'
 
 afterEach(() => {
@@ -97,5 +98,16 @@ describe('parseDateParam / parseMonthParam', () => {
     expect(parseMonthParam('2026-03')).toBe('2026-03')
     expect(parseMonthParam('2026-13')).toBeNull()
     expect(parseMonthParam('abc')).toBeNull()
+  })
+})
+
+describe('normalizeTime', () => {
+  it('HH:mm과 HH:mm:ss를 HH:mm으로 맞추고 비었거나 잘못된 값은 null이다', () => {
+    expect(normalizeTime('09:30')).toBe('09:30')
+    expect(normalizeTime('09:30:00')).toBe('09:30')
+    expect(normalizeTime(null)).toBeNull()
+    expect(normalizeTime('')).toBeNull()
+    expect(normalizeTime('9:30')).toBeNull()
+    expect(normalizeTime('abc')).toBeNull()
   })
 })

@@ -14,7 +14,7 @@ import {
 } from '@/features/tasks/hooks'
 import type { Task, UpdateTaskRequest } from '@/features/tasks/types'
 import { TaskItem } from '@/features/tasks/TaskItem'
-import { AddTaskForm } from '@/features/tasks/AddTaskForm'
+import { AddTaskForm, type NewTaskInput } from '@/features/tasks/AddTaskForm'
 import {
   useCreateRoutineMutation,
   useDeleteRoutineMutation,
@@ -27,11 +27,24 @@ import type { DayOfWeek } from '@/features/routines/types'
 import { useEventsQuery } from '@/features/events/hooks'
 import { useCategoriesQuery } from '@/features/categories/hooks'
 import { CategoryBadge } from '@/features/categories/CategoryBadge'
+import { CategoryDot } from '@/features/categories/CategoryDot'
 import { RECURRENCE_LABELS } from '@/features/events/types'
-import { addDaysISO, formatDisplayDate, parseDateParam, todayISO } from '@/lib/date'
+import { addDaysISO, formatDisplayDate, normalizeTime, parseDateParam, todayISO } from '@/lib/date'
 import { getErrorMessage } from '@/lib/error'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+// 시간이 있는 항목을 시간 오름차순으로 앞에, 없는 항목은 뒤에 둔다. 같은 시간이면 서버 순서를 유지한다(안정 정렬).
+function sortByStartTime(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => {
+    const timeA = normalizeTime(a.startTime)
+    const timeB = normalizeTime(b.startTime)
+    if (timeA === timeB) return 0
+    if (timeA === null) return 1
+    if (timeB === null) return -1
+    return timeA < timeB ? -1 : 1
+  })
+}
 
 export function DashboardPage() {
   const { user, logout } = useAuth()
@@ -62,10 +75,11 @@ export function DashboardPage() {
 
   // 삭제된 카테고리가 필터로 남아 있으면 전체로 취급한다.
   const activeFilter = categories.some((category) => category.id === categoryFilter) ? categoryFilter : null
-  const visibleTasks =
+  const filteredTasks =
     activeFilter === null
       ? tasksQuery.data
       : tasksQuery.data?.filter((task) => task.category?.id === activeFilter)
+  const visibleTasks = filteredTasks && sortByStartTime(filteredTasks)
 
   const isMutating =
     createTask.isPending ||
@@ -76,9 +90,9 @@ export function DashboardPage() {
   const isRoutineMutating =
     createRoutine.isPending || toggleRoutine.isPending || deleteRoutine.isPending
 
-  function handleAdd(title: string, categoryId: number | null) {
+  function handleAdd({ title, categoryId, priority, startTime }: NewTaskInput) {
     createTask.mutate(
-      { title, date, categoryId },
+      { title, date, categoryId, priority, startTime },
       { onError: (error) => toast.error(getErrorMessage(error, '할일 추가에 실패했습니다.')) },
     )
   }
@@ -104,6 +118,8 @@ export function DashboardPage() {
           memo: task.memo ?? undefined,
           date: addDaysISO(task.date, 1),
           categoryId: task.category?.id ?? null,
+          priority: task.priority,
+          startTime: task.startTime,
         },
       },
       { onError: (error) => toast.error(getErrorMessage(error, '이월에 실패했습니다.')) },
@@ -219,10 +235,10 @@ export function DashboardPage() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <span
-                  aria-hidden="true"
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: category.color }}
+                <CategoryDot
+                  category={category}
+                  decorative
+                  against={activeFilter === category.id ? 'primary' : 'page'}
                 />
                 {category.name}
               </button>

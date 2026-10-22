@@ -1,3 +1,4 @@
+import { ThemeToggle } from '@/features/theme/ThemeToggle'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -46,6 +47,9 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center p-4">
+      <div className="fixed right-3 top-3">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>chewit 로그인</CardTitle>

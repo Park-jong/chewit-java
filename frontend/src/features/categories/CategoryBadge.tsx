@@ -1,3 +1,4 @@
+import { CategoryDot } from './CategoryDot'
 import type { CategorySummary } from './types'
 
 interface CategoryBadgeProps {
@@ -9,11 +10,7 @@ export function CategoryBadge({ category }: CategoryBadgeProps) {
 
   return (
     <span className="inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
-      <span
-        aria-hidden="true"
-        className="size-2 shrink-0 rounded-full"
-        style={{ backgroundColor: category.color }}
-      />
+      <CategoryDot category={category} decorative />
       <span className="truncate">{category.name}</span>
     </span>
   )

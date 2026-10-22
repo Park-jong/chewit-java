@@ -43,6 +43,8 @@ public class TaskServiceImpl implements TaskService {
                 .memo(request.memo())
                 .date(request.date())
                 .category(categoryService.resolveOwned(userId, request.categoryId()))
+                .priority(request.priority())
+                .startTime(request.startTime())
                 .build();
         taskRepository.save(task);
         return toResponse(task);
@@ -56,6 +58,8 @@ public class TaskServiceImpl implements TaskService {
         task.setMemo(request.memo());
         task.setDate(request.date());
         task.setCategory(categoryService.resolveOwned(userId, request.categoryId()));
+        task.setPriority(request.priority());
+        task.setStartTime(request.startTime());
         return toResponse(task);
     }
 
@@ -101,7 +105,9 @@ public class TaskServiceImpl implements TaskService {
                 task.getDate(),
                 task.isDone(),
                 task.getCreatedAt(),
-                CategorySummary.from(task.getCategory())
+                CategorySummary.from(task.getCategory()),
+                task.getPriority(),
+                task.getStartTime()
         );
     }
 }

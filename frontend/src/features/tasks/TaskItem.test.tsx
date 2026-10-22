@@ -16,6 +16,8 @@ const task: Task = {
   done: true,
   createdAt: '2026-03-01T00:00:00Z',
   category: { id: 1, name: '업무', color: '#3B82F6' },
+  priority: null,
+  startTime: null,
 }
 
 function renderItem(onUpdate = vi.fn(), overrides: Partial<Task> = {}) {
@@ -59,6 +61,8 @@ describe('TaskItem 수정', () => {
       memo: undefined,
       date: '2026-03-10',
       categoryId: null,
+      priority: null,
+      startTime: null,
     })
   })
 
@@ -86,5 +90,74 @@ describe('TaskItem 수정', () => {
 
     expect(save.disabled).toBe(true)
     expect(onUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe('TaskItem 우선순위·시간', () => {
+  it('시간을 HH:mm으로 표시하고 우선순위는 텍스트 라벨 배지로 표시한다', () => {
+    renderItem(vi.fn(), { priority: 'HIGH', startTime: '09:30:00' })
+
+    expect(screen.getByText('09:30')).toBeInTheDocument()
+    expect(screen.getByText('높음')).toBeInTheDocument()
+  })
+
+  it('우선순위와 시간이 없으면 시간·배지를 표시하지 않는다', () => {
+    renderItem()
+
+    expect(screen.queryByText('높음')).toBeNull()
+    expect(screen.queryByText('보통')).toBeNull()
+    expect(screen.queryByText('낮음')).toBeNull()
+    expect(screen.queryByText(/^\d{2}:\d{2}$/)).toBeNull()
+  })
+
+  it('수정 폼의 우선순위 레이블은 추가 폼의 "우선순위"와 구분된다', () => {
+    renderItem()
+
+    fireEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    expect(screen.getByLabelText('할일 우선순위')).toBeTruthy()
+    expect(screen.queryByLabelText('우선순위', { exact: true })).toBeNull()
+  })
+
+  it('수정 폼에 기존 우선순위·시간이 채워지고 저장 시 그대로 전송한다', () => {
+    const onUpdate = renderItem(vi.fn(), { priority: 'MEDIUM', startTime: '14:05:00' })
+
+    fireEvent.click(screen.getByRole('button', { name: '수정' }))
+    expect((screen.getByLabelText('할일 우선순위') as HTMLSelectElement).value).toBe('MEDIUM')
+    expect((screen.getByLabelText('할일 시간') as HTMLInputElement).value).toBe('14:05')
+    fireEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ priority: 'MEDIUM', startTime: '14:05' }),
+    )
+  })
+
+  it('우선순위와 시간을 비우고 저장하면 null로 전송해 해제한다', () => {
+    const onUpdate = renderItem(vi.fn(), { priority: 'LOW', startTime: '07:00' })
+
+    fireEvent.click(screen.getByRole('button', { name: '수정' }))
+    fireEvent.change(screen.getByLabelText('할일 우선순위'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('할일 시간'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ priority: null, startTime: null }),
+    )
+  })
+
+  it('우선순위와 시간을 새로 지정해 저장할 수 있다', () => {
+    const onUpdate = renderItem()
+
+    fireEvent.click(screen.getByRole('button', { name: '수정' }))
+    fireEvent.change(screen.getByLabelText('할일 우선순위'), { target: { value: 'HIGH' } })
+    fireEvent.change(screen.getByLabelText('할일 시간'), { target: { value: '18:45' } })
+    fireEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ priority: 'HIGH', startTime: '18:45' }),
+    )
   })
 })

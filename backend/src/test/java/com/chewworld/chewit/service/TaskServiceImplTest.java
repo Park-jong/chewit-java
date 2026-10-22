@@ -8,6 +8,7 @@ import com.chewworld.chewit.dto.TaskDtos.TaskResponse;
 import com.chewworld.chewit.dto.TaskDtos.UpdateTaskRequest;
 import com.chewworld.chewit.entity.Category;
 import com.chewworld.chewit.entity.Task;
+import com.chewworld.chewit.entity.TaskPriority;
 import com.chewworld.chewit.entity.User;
 import com.chewworld.chewit.exception.InvalidRequestException;
 import com.chewworld.chewit.exception.ResourceNotFoundException;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,7 +67,7 @@ class TaskServiceImplTest {
     @Test
     void create_할일을_생성한다() {
         LocalDate date = LocalDate.of(2026, 8, 17);
-        CreateTaskRequest request = new CreateTaskRequest("새 할일", "메모", date, null);
+        CreateTaskRequest request = new CreateTaskRequest("새 할일", "메모", date, null, null, null);
         User userRef = User.builder().id(USER_ID).build();
         when(userRepository.getReferenceById(USER_ID)).thenReturn(userRef);
 
@@ -83,7 +85,7 @@ class TaskServiceImplTest {
         Task task = Task.builder().id(1L).title("기존").date(LocalDate.of(2026, 8, 1)).build();
         when(taskRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(task));
         LocalDate newDate = LocalDate.of(2026, 8, 20);
-        UpdateTaskRequest request = new UpdateTaskRequest("수정됨", "새메모", newDate, null);
+        UpdateTaskRequest request = new UpdateTaskRequest("수정됨", "새메모", newDate, null, null, null);
 
         TaskResponse response = taskService.update(USER_ID, 1L, request);
 
@@ -95,7 +97,7 @@ class TaskServiceImplTest {
     @Test
     void update_소유하지_않은_할일이면_예외() {
         when(taskRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.empty());
-        UpdateTaskRequest request = new UpdateTaskRequest("수정됨", null, LocalDate.now(), null);
+        UpdateTaskRequest request = new UpdateTaskRequest("수정됨", null, LocalDate.now(), null, null, null);
 
         assertThatThrownBy(() -> taskService.update(USER_ID, 1L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -108,7 +110,7 @@ class TaskServiceImplTest {
         when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
         when(categoryService.resolveOwned(USER_ID, 5L)).thenReturn(category);
 
-        TaskResponse response = taskService.create(USER_ID, new CreateTaskRequest("새 할일", null, date, 5L));
+        TaskResponse response = taskService.create(USER_ID, new CreateTaskRequest("새 할일", null, date, 5L, null, null));
 
         assertThat(response.category()).isEqualTo(new CategorySummary(5L, "업무", "#3B82F6"));
     }
@@ -118,7 +120,7 @@ class TaskServiceImplTest {
         when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
         when(categoryService.resolveOwned(USER_ID, 9L)).thenThrow(new ResourceNotFoundException("카테고리를 찾을 수 없습니다."));
 
-        assertThatThrownBy(() -> taskService.create(USER_ID, new CreateTaskRequest("새 할일", null, LocalDate.now(), 9L)))
+        assertThatThrownBy(() -> taskService.create(USER_ID, new CreateTaskRequest("새 할일", null, LocalDate.now(), 9L, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(taskRepository, never()).save(any(Task.class));
     }
@@ -130,7 +132,7 @@ class TaskServiceImplTest {
         when(taskRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(task));
 
         TaskResponse response = taskService.update(USER_ID, 1L,
-                new UpdateTaskRequest("기존", null, LocalDate.of(2026, 8, 1), null));
+                new UpdateTaskRequest("기존", null, LocalDate.of(2026, 8, 1), null, null, null));
 
         assertThat(response.category()).isNull();
         assertThat(task.getCategory()).isNull();
@@ -143,8 +145,62 @@ class TaskServiceImplTest {
         when(categoryService.resolveOwned(USER_ID, 9L)).thenThrow(new ResourceNotFoundException("카테고리를 찾을 수 없습니다."));
 
         assertThatThrownBy(() -> taskService.update(USER_ID, 1L,
-                new UpdateTaskRequest("수정", null, LocalDate.now(), 9L)))
+                new UpdateTaskRequest("수정", null, LocalDate.now(), 9L, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void create_priority와_startTime을_저장한다() {
+        LocalDate date = LocalDate.of(2026, 8, 17);
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
+
+        TaskResponse response = taskService.create(USER_ID,
+                new CreateTaskRequest("회의", null, date, null, TaskPriority.HIGH, LocalTime.of(9, 30)));
+
+        assertThat(response.priority()).isEqualTo(TaskPriority.HIGH);
+        assertThat(response.startTime()).isEqualTo(LocalTime.of(9, 30));
+    }
+
+    @Test
+    void update_priority와_startTime을_교체한다() {
+        Task task = Task.builder().id(1L).title("기존").date(LocalDate.of(2026, 8, 1)).build();
+        when(taskRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(task));
+
+        TaskResponse response = taskService.update(USER_ID, 1L, new UpdateTaskRequest("기존", null,
+                LocalDate.of(2026, 8, 1), null, TaskPriority.MEDIUM, LocalTime.of(18, 0)));
+
+        assertThat(response.priority()).isEqualTo(TaskPriority.MEDIUM);
+        assertThat(task.getStartTime()).isEqualTo(LocalTime.of(18, 0));
+    }
+
+    @Test
+    void update_priority와_startTime이_null이면_해제한다() {
+        Task task = Task.builder().id(1L).title("기존").date(LocalDate.of(2026, 8, 1))
+                .priority(TaskPriority.HIGH).startTime(LocalTime.of(9, 30)).build();
+        when(taskRepository.findByIdAndUser_Id(1L, USER_ID)).thenReturn(Optional.of(task));
+
+        TaskResponse response = taskService.update(USER_ID, 1L,
+                new UpdateTaskRequest("기존", null, LocalDate.of(2026, 8, 1), null, null, null));
+
+        assertThat(response.priority()).isNull();
+        assertThat(response.startTime()).isNull();
+        assertThat(task.getPriority()).isNull();
+        assertThat(task.getStartTime()).isNull();
+    }
+
+    @Test
+    void carryOver_priority와_startTime을_유지한다() {
+        LocalDate from = LocalDate.of(2026, 9, 20);
+        LocalDate to = LocalDate.of(2026, 9, 21);
+        Task task = Task.builder().id(1L).title("할일").date(from)
+                .priority(TaskPriority.LOW).startTime(LocalTime.of(7, 15)).build();
+        when(taskRepository.findByUser_IdAndDateAndDoneFalse(USER_ID, from)).thenReturn(List.of(task));
+
+        taskService.carryOver(USER_ID, new CarryOverRequest(from, to));
+
+        assertThat(task.getDate()).isEqualTo(to);
+        assertThat(task.getPriority()).isEqualTo(TaskPriority.LOW);
+        assertThat(task.getStartTime()).isEqualTo(LocalTime.of(7, 15));
     }
 
     @Test

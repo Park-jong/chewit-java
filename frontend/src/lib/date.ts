@@ -59,3 +59,10 @@ export function parseMonthParam(value: string | null): string | null {
   const month = Number(value.slice(5))
   return month >= 1 && month <= 12 ? value : null
 }
+
+// 서버의 "HH:mm" 또는 "HH:mm:ss" 시간을 "HH:mm"으로 맞춘다. 비었거나 형식이 아니면 null.
+export function normalizeTime(value: string | null | undefined): string | null {
+  if (!value) return null
+  const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(value)
+  return match ? `${match[1]}:${match[2]}` : null
+}

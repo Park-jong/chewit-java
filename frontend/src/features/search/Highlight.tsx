@@ -17,7 +17,7 @@ export function Highlight({ text, query }: HighlightProps) {
   while (index !== -1) {
     if (index > cursor) parts.push(text.slice(cursor, index))
     parts.push(
-      <mark key={index} className="rounded bg-yellow-200 px-0.5 text-foreground">
+      <mark key={index} className="rounded bg-yellow-200 px-0.5 text-neutral-900">
         {text.slice(index, index + needle.length)}
       </mark>,
     )

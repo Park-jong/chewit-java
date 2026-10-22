@@ -21,6 +21,8 @@ const sampleTask: Task = {
   done: false,
   createdAt: '2026-03-05T00:00:00Z',
   category: null,
+  priority: null,
+  startTime: null,
 }
 
 describe('tasks api', () => {
@@ -45,7 +47,7 @@ describe('tasks api', () => {
 
   it('updateTask는 PATCH /tasks/:id에 요청 바디를 전달한다', async () => {
     mockedApi.patch.mockResolvedValue({ data: sampleTask })
-    const request = { title: '수정됨', date: '2026-03-06', categoryId: null }
+    const request = { title: '수정됨', date: '2026-03-06', categoryId: null, priority: null, startTime: null }
 
     await updateTask(1, request)
 
@@ -68,7 +70,7 @@ describe('tasks api', () => {
 
   it('updateTask는 categoryId가 null이면 null 그대로 전달해 카테고리를 해제한다', async () => {
     mockedApi.patch.mockResolvedValue({ data: sampleTask })
-    const request = { title: '할일', date: '2026-03-06', categoryId: null }
+    const request = { title: '할일', date: '2026-03-06', categoryId: null, priority: null, startTime: null }
 
     await updateTask(1, request)
 

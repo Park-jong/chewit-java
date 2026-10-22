@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // React 로드 전에 저장된 테마(없으면 시스템 설정)를 적용해 첫 페인트 깜빡임을 막는다.
+      // 로직은 src/features/theme/ThemeProvider.tsx와 같은 키·규칙을 사용한다.
+      try {
+        var stored = null
+        try {
+          stored = localStorage.getItem('chewit_theme')
+        } catch (e) {}
+        var dark =
+          stored === 'dark' ||
+          (stored !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', dark)
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+      } catch (e) {}
+    </script>
     <title>chewit</title>
   </head>
   <body>

@@ -46,7 +46,7 @@ export function DailyCompletionChart({ daily, completedLabel, totalLabel }: Dail
           {completedLabel}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2.5 rounded-full bg-muted" />
+          <span className="inline-block size-2.5 rounded-full bg-muted-foreground/60" />
           {totalLabel}
         </span>
       </div>
@@ -67,7 +67,7 @@ export function DailyCompletionChart({ daily, completedLabel, totalLabel }: Dail
             cursor={{ fill: 'var(--color-accent)' }}
           />
           <Bar dataKey="completed" stackId="a" fill="var(--color-primary)" radius={[0, 0, 2, 2]} maxBarSize={14} />
-          <Bar dataKey="remaining" stackId="a" fill="var(--color-muted)" radius={[2, 2, 0, 0]} maxBarSize={14} />
+          <Bar dataKey="remaining" stackId="a" fill="var(--color-muted-foreground)" fillOpacity={0.6} radius={[2, 2, 0, 0]} maxBarSize={14} />
         </BarChart>
       </ResponsiveContainer>
     </div>

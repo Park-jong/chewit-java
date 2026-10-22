@@ -1,4 +1,6 @@
+import { useTheme } from '@/features/theme/ThemeProvider'
 import { cn } from '@/lib/utils'
+import { needsOutline } from './color'
 import { CATEGORY_COLORS } from './types'
 
 interface ColorSwatchesProps {
@@ -8,6 +10,8 @@ interface ColorSwatchesProps {
 }
 
 export function ColorSwatches({ value, onChange, disabled }: ColorSwatchesProps) {
+  const isDark = useTheme().resolvedTheme === 'dark'
+
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="색상 선택">
       {CATEGORY_COLORS.map((color) => {
@@ -21,7 +25,8 @@ export function ColorSwatches({ value, onChange, disabled }: ColorSwatchesProps)
             disabled={disabled}
             onClick={() => onChange(color.value)}
             className={cn(
-              'size-6 rounded-full border-2 border-transparent transition-shadow disabled:opacity-50',
+              'size-6 rounded-full border-2 transition-shadow disabled:opacity-50',
+              needsOutline(color.value, isDark) ? 'border-foreground/60' : 'border-foreground/15',
               isSelected && 'ring-2 ring-ring ring-offset-2 ring-offset-background',
             )}
             style={{ backgroundColor: color.value }}

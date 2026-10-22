@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { NavBar } from './NavBar'
@@ -50,5 +50,35 @@ describe('NavBar', () => {
     )
 
     expect(screen.getByText('검색')).toHaveAttribute('href', '/search')
+  })
+
+  it('활성 탭을 탭 영역 안으로 스크롤한다', () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    try {
+      render(
+        <MemoryRouter initialEntries={['/search']}>
+          <NavBar />
+        </MemoryRouter>,
+      )
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(1)
+      expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByText('검색'))
+      expect(scrollIntoView).toHaveBeenCalledWith({ inline: 'nearest', block: 'nearest', behavior: 'auto' })
+    } finally {
+      // jsdom 기본 상태(미구현)로 되돌린다.
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+    }
+  })
+
+  it('scrollIntoView가 없는 환경에서도 에러 없이 렌더링된다', () => {
+    expect(Element.prototype.scrollIntoView).toBeUndefined()
+    expect(() =>
+      render(
+        <MemoryRouter initialEntries={['/search']}>
+          <NavBar />
+        </MemoryRouter>,
+      ),
+    ).not.toThrow()
   })
 })
