@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import { TOKEN_STORAGE_KEY } from '@/lib/api'
 import { fetchCurrentUser, login as loginRequest, signup as signupRequest } from './api'
 import type { LoginRequest, SignupRequest, UserResponse } from './types'
@@ -16,6 +17,11 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 const CURRENT_USER_QUERY_KEY = ['auth', 'me']
 
+function isAuthError(error: unknown) {
+  const status = isAxiosError(error) ? error.response?.status : undefined
+  return status === 401 || status === 403
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [hasToken, setHasToken] = useState(() => Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)))
@@ -25,7 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: fetchCurrentUser,
     enabled: hasToken,
     retry: false,
+    // 오프라인이어도 쿼리가 일시정지(loading 고착)되지 않고 즉시 실패해 앱 셸이 뜨게 한다.
+    // 온라인 복귀 시에는 refetchOnReconnect로 자동 재조회된다.
+    networkMode: 'always',
   })
+
+  // 토큰이 거부된 경우(401/403)만 로그아웃. 네트워크 오류·타임아웃·5xx는 토큰을 유지한다.
+  const isTokenRejected = meQuery.isError && isAuthError(meQuery.error)
 
   function persistSession(token: string, user: UserResponse) {
     localStorage.setItem(TOKEN_STORAGE_KEY, token)
@@ -44,11 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    if (hasToken && meQuery.isError) {
+    if (hasToken && isTokenRejected) {
       localStorage.removeItem(TOKEN_STORAGE_KEY)
       setHasToken(false)
     }
-  }, [hasToken, meQuery.isError])
+  }, [hasToken, isTokenRejected])
 
   function logout() {
     localStorage.removeItem(TOKEN_STORAGE_KEY)
@@ -61,9 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? 'unauthenticated'
     : meQuery.isPending
       ? 'loading'
-      : meQuery.isError
+      : isTokenRejected
         ? 'unauthenticated'
-        : 'authenticated'
+        : 'authenticated' // 일시적 오류면 user 없이(null) 인증 상태로 취급
 
   const value = useMemo<AuthContextValue>(
     () => ({
