@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/features/auth/AuthContext'
 import { ThemeProvider } from '@/features/theme/ThemeProvider'
+import { registerServiceWorker } from '@/lib/pwa'
 import './index.css'
 import App from './App.tsx'
 
@@ -24,3 +25,5 @@ createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </StrictMode>,
 )
+
+registerServiceWorker()
