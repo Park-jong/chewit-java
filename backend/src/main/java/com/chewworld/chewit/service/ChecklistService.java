@@ -17,6 +17,8 @@ public interface ChecklistService {
 
     ChecklistResponse rename(Long userId, Long checklistId, UpdateChecklistRequest request);
 
+    ChecklistResponse duplicate(Long userId, Long checklistId);
+
     void delete(Long userId, Long checklistId);
 
     ChecklistResponse addItem(Long userId, Long checklistId, CreateChecklistItemRequest request);

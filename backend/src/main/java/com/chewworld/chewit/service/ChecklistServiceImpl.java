@@ -25,6 +25,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChecklistServiceImpl implements ChecklistService {
 
+    // checklists.title 컬럼 길이(JPA 기본 255)
+    private static final int TITLE_MAX_LENGTH = 255;
+    private static final String COPY_SUFFIX = " (복사본)";
+
     private final ChecklistRepository checklistRepository;
     private final UserRepository userRepository;
     private final CategoryService categoryService;
@@ -47,6 +51,45 @@ public class ChecklistServiceImpl implements ChecklistService {
                 .build();
         checklistRepository.save(checklist);
         return toResponse(checklist);
+    }
+
+    @Override
+    @Transactional
+    public ChecklistResponse duplicate(Long userId, Long checklistId) {
+        Checklist source = checklistRepository.findWithDetailsByIdAndUser_Id(checklistId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("체크리스트를 찾을 수 없습니다."));
+
+        Checklist copy = Checklist.builder()
+                .user(userRepository.getReferenceById(userId))
+                .title(copyTitle(source.getTitle()))
+                .category(source.getCategory())
+                .build();
+        List<ChecklistItem> sourceItems = source.getItems().stream()
+                .sorted((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
+                .toList();
+        for (int i = 0; i < sourceItems.size(); i++) {
+            copy.getItems().add(ChecklistItem.builder()
+                    .checklist(copy)
+                    .content(sourceItems.get(i).getContent())
+                    .sortOrder(i)
+                    .build());
+        }
+        checklistRepository.save(copy);
+        return toResponse(copy);
+    }
+
+    // 접미사를 붙여도 제목 최대 길이를 넘지 않도록 원 제목을 잘라낸다.
+    private String copyTitle(String title) {
+        int maxBaseLength = TITLE_MAX_LENGTH - COPY_SUFFIX.length();
+        if (title.length() <= maxBaseLength) {
+            return title + COPY_SUFFIX;
+        }
+        int end = maxBaseLength;
+        // 서로게이트 쌍이 잘리지 않게 한다.
+        if (Character.isHighSurrogate(title.charAt(end - 1))) {
+            end--;
+        }
+        return title.substring(0, end) + COPY_SUFFIX;
     }
 
     @Override

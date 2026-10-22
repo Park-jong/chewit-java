@@ -5,6 +5,10 @@ import { MemoryRouter } from 'react-router-dom'
 import { ChecklistsPage } from './ChecklistsPage'
 import type { Checklist } from '@/features/checklists/types'
 
+import { toast } from 'sonner'
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+
 const mockUseAuth = vi.fn()
 vi.mock('@/features/auth/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
@@ -12,6 +16,7 @@ vi.mock('@/features/auth/AuthContext', () => ({
 
 const createMutate = vi.fn()
 const deleteMutate = vi.fn()
+const duplicateMutate = vi.fn()
 const toggleMutate = vi.fn()
 const addItemMutate = vi.fn()
 const renameMutate = vi.fn()
@@ -26,6 +31,7 @@ vi.mock('@/features/checklists/hooks', () => ({
   useChecklistsQuery: (...args: unknown[]) => mockUseChecklistsQuery(...args),
   useCreateChecklistMutation: () => ({ mutate: createMutate, isPending: false }),
   useDeleteChecklistMutation: () => ({ mutate: deleteMutate, isPending: false }),
+  useDuplicateChecklistMutation: () => ({ mutate: duplicateMutate, isPending: false }),
   useRenameChecklistMutation: () => ({ mutate: renameMutate, isPending: false }),
   useAddChecklistItemMutation: () => ({ mutate: addItemMutate, isPending: false }),
   useToggleChecklistItemMutation: () => ({ mutate: toggleMutate, isPending: false }),
@@ -90,6 +96,36 @@ describe('ChecklistsPage', () => {
     fireEvent.click(screen.getByRole('checkbox'))
 
     expect(toggleMutate).toHaveBeenCalledWith({ checklistId: 1, itemId: 10 }, expect.anything())
+  })
+
+  describe('복제', () => {
+    function renderPage() {
+      render(
+        <MemoryRouter initialEntries={['/checklists']}>
+          <ChecklistsPage />
+        </MemoryRouter>,
+      )
+    }
+
+    it('복제 버튼을 클릭하면 해당 체크리스트 id로 mutate가 호출된다', () => {
+      renderPage()
+
+      fireEvent.click(screen.getByRole('button', { name: '복제' }))
+
+      expect(duplicateMutate).toHaveBeenCalledWith(1, expect.anything())
+    })
+
+    it('성공하면 성공 토스트를, 실패하면 오류 토스트를 표시한다', () => {
+      renderPage()
+      fireEvent.click(screen.getByRole('button', { name: '복제' }))
+      const options = duplicateMutate.mock.calls[0][1]
+
+      options.onSuccess()
+      expect(toast.success).toHaveBeenCalledWith('체크리스트를 복제했습니다.')
+
+      options.onError(new Error('boom'))
+      expect(toast.error).toHaveBeenCalledWith(expect.any(String))
+    })
   })
 
   describe('이름 변경', () => {

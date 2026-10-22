@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { NavBar } from '@/components/NavBar'
@@ -10,6 +10,7 @@ import {
   useCreateChecklistMutation,
   useDeleteChecklistItemMutation,
   useDeleteChecklistMutation,
+  useDuplicateChecklistMutation,
   useRenameChecklistMutation,
   useReorderChecklistItemsMutation,
   useToggleChecklistItemMutation,
@@ -34,6 +35,7 @@ export function ChecklistsPage() {
   const categories = categoriesQuery.data ?? []
   const createChecklist = useCreateChecklistMutation()
   const deleteChecklist = useDeleteChecklistMutation()
+  const duplicateChecklist = useDuplicateChecklistMutation()
   const renameChecklist = useRenameChecklistMutation()
   const addItem = useAddChecklistItemMutation()
   const toggleItem = useToggleChecklistItemMutation()
@@ -51,7 +53,7 @@ export function ChecklistsPage() {
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null)
   const [dragOverItemId, setDragOverItemId] = useState<number | null>(null)
 
-  const isMutating = createChecklist.isPending || deleteChecklist.isPending
+  const isMutating = createChecklist.isPending || deleteChecklist.isPending || duplicateChecklist.isPending
   const isItemMutating =
     renameChecklist.isPending ||
     addItem.isPending ||
@@ -71,6 +73,13 @@ export function ChecklistsPage() {
       onError: (error) => toast.error(getErrorMessage(error, '삭제에 실패했습니다.')),
     })
     if (expandedId === id) setExpandedId(null)
+  }
+
+  function handleDuplicate(id: number) {
+    duplicateChecklist.mutate(id, {
+      onSuccess: () => toast.success('체크리스트를 복제했습니다.'),
+      onError: (error) => toast.error(getErrorMessage(error, '복제에 실패했습니다.')),
+    })
   }
 
   function handleToggleExpand(id: number) {
@@ -222,6 +231,16 @@ export function ChecklistsPage() {
                     </p>
                   </span>
                 </button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={isMutating}
+                  onClick={() => handleDuplicate(checklist.id)}
+                  aria-label="복제"
+                  title="복제"
+                >
+                  <Copy className="size-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

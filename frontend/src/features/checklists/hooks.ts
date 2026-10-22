@@ -4,6 +4,7 @@ import {
   createChecklist,
   deleteChecklist,
   deleteChecklistItem,
+  duplicateChecklist,
   listChecklists,
   renameChecklist,
   reorderChecklistItems,
@@ -36,6 +37,14 @@ export function useCreateChecklistMutation() {
   const invalidate = useInvalidateChecklists()
   return useMutation({
     mutationFn: (request: CreateChecklistRequest) => createChecklist(request),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDuplicateChecklistMutation() {
+  const invalidate = useInvalidateChecklists()
+  return useMutation({
+    mutationFn: (id: number) => duplicateChecklist(id),
     onSuccess: invalidate,
   })
 }

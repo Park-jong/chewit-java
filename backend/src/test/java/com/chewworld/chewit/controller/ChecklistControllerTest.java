@@ -7,6 +7,7 @@ import com.chewworld.chewit.dto.ChecklistDtos.CreateChecklistRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.ReorderItemsRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.UpdateChecklistItemRequest;
 import com.chewworld.chewit.dto.ChecklistDtos.UpdateChecklistRequest;
+import com.chewworld.chewit.exception.ResourceNotFoundException;
 import com.chewworld.chewit.service.ChecklistService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,26 @@ class ChecklistControllerTest extends com.chewworld.chewit.controller.support.Co
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void duplicate_성공하면_201과_복제된_체크리스트를_반환한다() throws Exception {
+        when(checklistService.duplicate(1L, 3L)).thenReturn(
+                new ChecklistResponse(4L, "장보기 (복사본)", List.of(new ChecklistItemResponse(9L, "우유", false, 0)), null, null));
+
+        mockMvc.perform(post("/api/checklists/{id}/duplicate", 3L).with(authenticatedAs(1L)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.title").value("장보기 (복사본)"))
+                .andExpect(jsonPath("$.items[0].checked").value(false));
+    }
+
+    @Test
+    void duplicate_없거나_타인의_체크리스트면_404를_반환한다() throws Exception {
+        when(checklistService.duplicate(1L, 99L)).thenThrow(new ResourceNotFoundException("체크리스트를 찾을 수 없습니다."));
+
+        mockMvc.perform(post("/api/checklists/{id}/duplicate", 99L).with(authenticatedAs(1L)))
+                .andExpect(status().isNotFound());
     }
 
     @Test

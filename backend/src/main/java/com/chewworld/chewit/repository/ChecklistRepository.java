@@ -35,6 +35,10 @@ public interface ChecklistRepository extends JpaRepository<Checklist, Long> {
 
     Optional<Checklist> findByIdAndUser_Id(Long id, Long userId);
 
+    // 복제용: 카테고리와 항목을 한 번에 조회한다.
+    @EntityGraph(attributePaths = {"category", "items"})
+    Optional<Checklist> findWithDetailsByIdAndUser_Id(Long id, Long userId);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Checklist c set c.category = null where c.category.id = :categoryId")
     void clearCategory(@Param("categoryId") Long categoryId);

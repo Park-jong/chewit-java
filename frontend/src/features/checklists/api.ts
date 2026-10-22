@@ -18,6 +18,11 @@ export async function createChecklist(request: CreateChecklistRequest): Promise<
   return data
 }
 
+export async function duplicateChecklist(id: number): Promise<Checklist> {
+  const { data } = await api.post<Checklist>(`/checklists/${id}/duplicate`)
+  return data
+}
+
 export async function renameChecklist(id: number, request: UpdateChecklistRequest): Promise<Checklist> {
   const { data } = await api.patch<Checklist>(`/checklists/${id}`, request)
   return data

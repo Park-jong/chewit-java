@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -75,6 +76,60 @@ class ChecklistServiceImplTest {
         ChecklistResponse response = checklistService.create(USER_ID, new CreateChecklistRequest("장보기", 5L));
 
         assertThat(response.category()).isEqualTo(new CategorySummary(5L, "장보기", "#F59E0B"));
+    }
+
+    @Test
+    void duplicate_카테고리와_항목을_순서대로_복사하고_모두_미체크로_만든다() {
+        Category category = Category.builder().id(5L).name("장보기").color("#F59E0B").build();
+        ChecklistItem second = ChecklistItem.builder().id(2L).content("빵").checked(false).sortOrder(7).build();
+        ChecklistItem first = ChecklistItem.builder().id(1L).content("우유").checked(true).sortOrder(3).build();
+        Checklist source = checklistWithItems(second, first);
+        source.setCategory(category);
+        when(checklistRepository.findWithDetailsByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.of(source));
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(User.builder().id(USER_ID).build());
+
+        ChecklistResponse response = checklistService.duplicate(USER_ID, CHECKLIST_ID);
+
+        assertThat(response.title()).isEqualTo("체크리스트 (복사본)");
+        assertThat(response.category()).isEqualTo(new CategorySummary(5L, "장보기", "#F59E0B"));
+        assertThat(response.items()).extracting("content").containsExactly("우유", "빵");
+        assertThat(response.items()).extracting("sortOrder").containsExactly(0, 1);
+        assertThat(response.items()).extracting("checked").containsExactly(false, false);
+        // 원본은 변경되지 않는다
+        assertThat(first.isChecked()).isTrue();
+        assertThat(source.getTitle()).isEqualTo("체크리스트");
+        verify(checklistRepository).save(any(Checklist.class));
+    }
+
+    @Test
+    void duplicate_제목이_접미사를_붙여_최대_길이에_딱_맞으면_자르지_않는다() {
+        String title = "가".repeat(249);
+        Checklist source = checklistWithItems();
+        source.setTitle(title);
+        when(checklistRepository.findWithDetailsByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.of(source));
+
+        ChecklistResponse response = checklistService.duplicate(USER_ID, CHECKLIST_ID);
+
+        assertThat(response.title()).isEqualTo(title + " (복사본)").hasSize(255);
+    }
+
+    @Test
+    void duplicate_제목이_최대_길이를_넘게_되면_원_제목을_잘라_255자로_맞춘다() {
+        Checklist source = checklistWithItems();
+        source.setTitle("가".repeat(255));
+        when(checklistRepository.findWithDetailsByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.of(source));
+
+        ChecklistResponse response = checklistService.duplicate(USER_ID, CHECKLIST_ID);
+
+        assertThat(response.title()).isEqualTo("가".repeat(249) + " (복사본)").hasSize(255);
+    }
+
+    @Test
+    void duplicate_소유하지_않았거나_없는_체크리스트면_예외() {
+        when(checklistRepository.findWithDetailsByIdAndUser_Id(CHECKLIST_ID, USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> checklistService.duplicate(USER_ID, CHECKLIST_ID))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

@@ -5,6 +5,7 @@ import {
   createChecklist,
   renameChecklist,
   deleteChecklist,
+  duplicateChecklist,
   addChecklistItem,
   updateChecklistItem,
   toggleChecklistItem,
@@ -74,6 +75,16 @@ describe('checklists api', () => {
     await deleteChecklist(1)
 
     expect(mockedApi.delete).toHaveBeenCalledWith('/checklists/1')
+  })
+
+  it('duplicateChecklist는 POST /checklists/:id/duplicate를 호출하고 새 체크리스트를 반환한다', async () => {
+    const copy = { ...sampleChecklist, id: 2, title: '장보기 (복사본)' }
+    mockedApi.post.mockResolvedValue({ data: copy })
+
+    const result = await duplicateChecklist(1)
+
+    expect(mockedApi.post).toHaveBeenCalledWith('/checklists/1/duplicate')
+    expect(result).toEqual(copy)
   })
 
   it('addChecklistItem은 중첩 경로 POST /checklists/:id/items를 호출한다', async () => {
