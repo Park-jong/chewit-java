@@ -33,6 +33,10 @@ public interface ChecklistRepository extends JpaRepository<Checklist, Long> {
     @Query("select distinct c from Checklist c left join fetch c.items where c.id in :ids")
     List<Checklist> findWithItemsByIdIn(@Param("ids") List<Long> ids);
 
+    // 내보내기용: 카테고리와 항목을 한 번에 조회한다.
+    @EntityGraph(attributePaths = {"category", "items"})
+    List<Checklist> findWithDetailsByUser_IdOrderByCreatedAtAsc(Long userId);
+
     Optional<Checklist> findByIdAndUser_Id(Long id, Long userId);
 
     // 복제용: 카테고리와 항목을 한 번에 조회한다.

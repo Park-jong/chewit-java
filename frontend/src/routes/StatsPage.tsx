@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { NavBar } from '@/components/NavBar'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useMonthlyStatsQuery } from '@/features/stats/hooks'
+import { ExportCard } from '@/features/export/ExportCard'
 import { StatTile } from '@/features/stats/StatTile'
 import { DailyCompletionChart } from '@/features/stats/DailyCompletionChart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -126,6 +127,8 @@ export function StatsPage() {
           </Card>
         </>
       )}
+
+      <ExportCard />
     </div>
   )
 }

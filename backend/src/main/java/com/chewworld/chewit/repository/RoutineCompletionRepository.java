@@ -15,5 +15,8 @@ public interface RoutineCompletionRepository extends JpaRepository<RoutineComple
 
     List<RoutineCompletion> findByRoutine_IdInAndDateBetween(List<Long> routineIds, LocalDate startDate, LocalDate endDate);
 
+    // 내보내기용: 여러 루틴의 전체 완료 기록
+    List<RoutineCompletion> findByRoutine_IdInOrderByDateAsc(List<Long> routineIds);
+
     void deleteByRoutine_Id(Long routineId);
 }

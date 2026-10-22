@@ -34,6 +34,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> search(@Param("userId") Long userId, @Param("pattern") String pattern,
                       @Param("categoryId") Long categoryId, Pageable pageable);
 
+    // 내보내기용: 전체 조회(카테고리 함께)
+    @EntityGraph(attributePaths = "category")
+    List<Task> findByUser_IdOrderByDateAscIdAsc(Long userId);
+
     Optional<Task> findByIdAndUser_Id(Long id, Long userId);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
